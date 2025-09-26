@@ -7,6 +7,40 @@
   ╚═══╝  ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝    ╚═╝      ╚═╝   ╚══════╝      
 */
 
+///////////////////////////////////////////////////////////// MODS ////////////////////////////////////////////////////////////////////
+/*
+AIM SNAP
+Description: Snaps your aim toward the nearest target within a small field of view for quicker target acquisition.
+
+AIM ASSIST
+Description: Adds subtle left/right stick movement while aiming to make the in-game aim assist bubble feel stronger and “stickier.”
+
+STICKY AIM
+Description: Creates a tight lock-on effect by constantly pulling your crosshair toward targets and keeping it inside the hitbox.
+
+RECOIL CONTROL
+Description: Applies downward stick movement to automatically reduce weapon recoil when firing.
+
+BUNNY HOP
+Description: Automatically performs timed jumps while firing from the hip, keeping you mobile and harder to hit.
+
+PING ENEMY
+Description: Rapidly taps the ping button while shooting so enemies get marked more easily.
+
+HOLD BREATH (Sniper Apnea)
+Description: Automatically holds breath when aiming with a sniper to steady your scope without extra button presses.
+
+RAPIDFIRE
+Description: Converts semi-automatic weapons into full-auto by pressing fire rapidly at a set speed.
+
+KILLSHOTZ
+Description: Adds micro-movements when firing inside a close radius to increase hit registration on enemies.
+
+SLIDE HOP (if you enable it)
+Description: Triggers a jump right as a slide ends, letting you chain slides into hops for faster evasive movement.
+*/
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 define Fire                 = PS4_R2;
 define Aim                  = PS4_L2;
 define Sprint	            = PS4_L3;
@@ -225,51 +259,62 @@ function killshotz_force_on() {
     set_pvar(SPVAR_26, 1);       // persist ON
 }
 
-// -------------------- SINGLE INIT BLOCK -----------------------------
 init {
-    NOTOROIOUS112344_onoff   = 1;                                                            // AIM SNAP default ON; abstracted from user
-    HOThACKR666656           = get_pvar(SPVAR_2,  0,   1,    0);
-    HOThACKR6999999999       = get_pvar(SPVAR_3, 0, 2, 2);            // AIM ASSIST default AIM+SHOT
-    // Ensure start ON with preset locked values
-    aim_assist_set_onoff(1);
-    // HOTHACKR1111222233       = 1;                                                         // SLIDE HOP default ON
-    HOTHACKR1111222233       = 0;      // SLIDE HOP default OFF (disabled)
-    trackermod_lock_on();                                                                   // STICKY AIM default ON with locked preset
-    HOThACKR66665609         = 1;                                                           // RECOIL CONTROL default ON
+    // ================= AIM / ASSIST DEFAULTS =================
+    NOTOROIOUS112344_onoff   = 1;                          // AIM SNAP toggle (1 = ON by default)
+    HOThACKR666656           = get_pvar(SPVAR_2,  0, 1, 0); // General ON/OFF state storage
+    HOThACKR6999999999       = get_pvar(SPVAR_3, 0, 2, 2);  // AIM ASSIST mode (0=off, 1=ON, 2=Aim+Shot default)
+    aim_assist_set_onoff(1);                               // Force AIM ASSIST to default ON (mode = Aim+Shot)
+    
+    // ================= MOVEMENT MODS =================
+    HOTHACKR1111222233       = 0;                          // SLIDE HOP default OFF
+    trackermod_lock_on();                                  // STICKY AIM lock ON at preset (Size=18, Speed=90)
+    HOThACKR66665609         = 1;                          // RECOIL CONTROL default ON
+    HOTHACKR111122223333     = 1;                          // BUNNY_HOP default ON
+    
+    // ================= OTHER CORE MODS =================
+    HOThACKR6990000000       = get_pvar(SPVAR_26, 0, 1, 1); // KILLSHOTZ default ON
+    killshotz_force_on();                                  // Ensure KILLSHOTZ is always ON/persisted
+    HOTHACKR11112266666      = 1;                          // PING ENEMY default ON
+    HOTHACKR111122666        = 1;                          // HOLD BREATH (SNIPER APNEA) default ON
+    HOTHACKR11117777777      = 1;                          // RAPIDFIRE default ON
+    HOTHACKR111177           = get_pvar(SPVAR_35, 1, 5, 0); // RAPIDFIRE speed profile
+    
+    // ================= AIM SNAP SETTINGS =================
+    NOTOROIOUS112344         = 3;                          // AIM SNAP FOV (default 3)
+    NOTOROIOUS13435          = 10;                         // Deadzone threshold
+    NOTOROIOUS138908         = 28;                         // AIM ASSIST VM Speed (default 50)
+    NOTOROIOUS65757          = 7;                         // AIM ASSIST Width Shape
+    NOTOROIOUS89099          = 5; // Vertical adjustment
+    NOTOROIOUS89777          = 4; // Size
+    NOTOROIOUS00909          = 8; // Time
+    
+    // ================= TRACKER / STICKY AIM SETTINGS =================
+    NOTOROIOUS123499         = 18; // STICKY AIM Size
+    NOTOROIOUS877778         = 45; // STICKY AIM Speed
+    
+    // ================= RECOIL CONTROL =================
+    NOTOROIOUS87711          = 22;                                                    // Vertical Recoil default
+    NOTOROIOUS1998           = get_pvar(SPVAR_17, 1, 10, 1);   // Bunny Hop: delay multiplier
+    NOTOROIOUS20000          = get_pvar(SPVAR_18, 1, 999, 100);// Bunny Hop: crouch/jump timing
+    NOTOROIOUS201009         = get_pvar(SPVAR_20, 1, 99, 5);   // AA booster: jitter frequency
+    NOTOROIOUS20787          = get_pvar(SPVAR_21, 1, 2000, 1500); // AA booster: jitter delay
+    
+    // ================= HOTKEYS & EXTRA VARIABLES =================
+    HOTKEY19                 = get_pvar(SPVAR_23, 1, 100, 13); // Custom hotkey #19
+    HOThACKR1232             = get_pvar(SPVAR_24, 1, 100, 50); // General param slot
+    HOThACKR129685788        = get_pvar(SPVAR_25, 1, 100, 9);  // General param slot
+    RadiuS                   = 10;                                                    // Polar Aim Assist radius
+    
+    // ================= TIMINGS (RAPID FIRE) =================
+    HOThACKR1296857885675858 = get_pvar(SPVAR_30, 1, 2000, 1000); // Ping cooldown
+    HOThACKR129685788567     = get_pvar(SPVAR_33, 1, 1000, 4);    // AA random offset
+    HOThACKR1878787879       = 7;                               // RAPID FIRE speed (ms between shots)
+    HOThACKR187878           = 22;                              // RAPID FIRE release (ms)
+    
+    // ================= GENERAL =================
+    slot_numb = get_slot();                                     // Current slot number on Zen device
 
-    HOTHACKR111122223333     = 1;                                                          // BUNNY_HOP default ON; 
-    HOThACKR6990000000       = get_pvar(SPVAR_26, 0, 1, 1);         // default ON
-    killshotz_force_on();
-    HOTHACKR11112266666      = 1;                                                          // PING default ON; 
-    HOTHACKR111122666        = 1;                                                          // HOLD BREATH default ON;
-    HOTHACKR11117777777      = 1;                                                          // RAPIDFIRE default ON;
-    HOTHACKR111177           = get_pvar(SPVAR_35, 1,   5,    0);
-
-    NOTOROIOUS112344         = 3;                                                           // AIM SNAP FOV default 3; abstracted from user
-    NOTOROIOUS13435          = get_pvar(SPVAR_7,  1,  50,    5);
-    NOTOROIOUS138908         = 50;                                                          // AIM ASSIST Vm Speed default 50
-    NOTOROIOUS65757          = 14;                                                          // AIM ASSIST Width Shape default 14
-    NOTOROIOUS89099          = get_pvar(SPVAR_10, 1, 100,    6);
-    NOTOROIOUS89777          = get_pvar(SPVAR_11, 1, 100,    6);
-    NOTOROIOUS00909          = get_pvar(SPVAR_12, 1,  50,   10);
-    NOTOROIOUS123499         = get_pvar(SPVAR_13, 1, 100,   18);
-    NOTOROIOUS877778         = get_pvar(SPVAR_14, 1, 100,   90);
-    NOTOROIOUS87711          = get_pvar(SPVAR_15, 1, 100,   23);    // RECOIL CONTROL Vertical default 23
-    NOTOROIOUS1998           = get_pvar(SPVAR_17, 1, 10, 1);
-    NOTOROIOUS20000          = get_pvar(SPVAR_18, 1, 999, 100);
-    NOTOROIOUS201009         = get_pvar(SPVAR_20, 1,  99,    5);
-    NOTOROIOUS20787          = get_pvar(SPVAR_21, 1,2000, 1500);
-
-    HOTKEY19                 = get_pvar(SPVAR_23, 1, 100,   13);
-    HOThACKR1232             = get_pvar(SPVAR_24, 1, 100,   50);
-    HOThACKR129685788        = get_pvar(SPVAR_25, 1, 100,    9);
-    RadiuS                   = get_pvar(SPVAR_27, 1, 100,   13);
-    HOThACKR1296857885675858 = get_pvar(SPVAR_30, 1,2000, 1000);
-    HOThACKR129685788567     = get_pvar(SPVAR_33, 1,1000,    4);
-    HOThACKR1878787879 = 7;   // FR Speed
-    HOThACKR187878     = 22;  // FR Release
-
-    slot_numb = get_slot();
 
     // active_aiming depends on NOTOROIOUS138908/89099 already loaded above
     active_aiming = (((360 + NOTOROIOUS138908) / NOTOROIOUS138908) + 1) * NOTOROIOUS89099;
