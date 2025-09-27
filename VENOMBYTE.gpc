@@ -41,95 +41,97 @@ Description: Triggers a jump right as a slide ends, letting you chain slides int
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-define Fire                 = PS4_R2;
-define Aim                  = PS4_L2;
-define Sprint	            = PS4_L3;
-define aim_x                = PS4_RX;
-define aim_y                = PS4_RY;
-define BTN_MELEE            = PS4_CIRCLE;
-define BTN_TACTICAL         = PS4_L1;
-define BTN_LETHAL           = PS4_R1;
-define Crouch	            = PS4_CIRCLE;
-define BTN_JUMP             = PS4_CROSS;
-define PS 				    = POLAR_RS;
-define PY 				    = POLAR_RY;
-define PX 				    = POLAR_RX;
-define Ping       		    = PS4_UP;
-define moveLY               = PS4_LY;
-define EDIT_COUNT           = 21;
+//----- CROSS-PLATFORM INPUT LAYER -----
+int Fire, Aim, Sprint;
+int aim_x, aim_y;
+int BTN_MELEE, BTN_TACTICAL, BTN_LETHAL;
+int Crouch, BTN_JUMP;
+int BTN_MENU, BTN_SHARE;       // OPTIONS/MENU and SHARE/VIEW
+int BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT;
+int BTN_R3;
+int moveLX, moveLY;
+int Ping;
+
+// Polar aliases are platform-agnostic; keep as defines
+define PS = POLAR_RS;
+define PX = POLAR_RX;
+define PY = POLAR_RY;
 
 int adjust_variable_idx;                  
-int NOTOROIOUS112344; 
-int NOTOROIOUS13435;
-int NOTOROIOUS138908; 
-int NOTOROIOUS65757; 
-int NOTOROIOUS89099;  
-int NOTOROIOUS89777;  
-int NOTOROIOUS00909;
-int NOTOROIOUS123499; 
-int NOTOROIOUS877778; 
-int NOTOROIOUS87711;  
-int NOTOROIOUS1998; 
-int NOTOROIOUS20000; 
-int NOTOROIOUS201009; 
-int NOTOROIOUS20787; 
-int HOTKEY19; 
-int HOThACKR1232;     
-int HOThACKR129685788;           
-int RadiuS; 
-int HOThACKR1296857885675858; 
-int HOThACKR129685788567;
-int HOThACKR1878787879; 
-int HOThACKR187878;                       
-define AMOUNT_OF_VALNAME_IDX = 22; 
-define MAX_MODS_COUNT = 15;     // add one extra page at the end
-define ABOUT_IDX = 15;          // new About page index      
+int aimSnap_resolution; 
+int input_deadzone;
+int aimAssist_vmSpeed; 
+int aimAssist_width; 
+int aimAssist_vertical;  
+int aimAssist_size;  
+int aimAssist_time;
+int stickyAim_size; 
+int stickyAim_speed; 
+int recoil_y_compensation;  
+int bunnyHop_delayMultiplier; 
+int bunnyHop_timing_ms; 
+int aaBooster_frequency; 
+int aaBooster_delay_ms; 
+int userHotkeyCode; 
+int param_slot_a;     
+int param_slot_b;           
+int polarAssist_radius; 
+int pingCooldown_ms; 
+int rapidFire_on_ms;
+int rapidFire_off_ms; 
+int rapidFire_release_ms;    
 
-define IDX_RECOIL_CONTROL = 0;
-define IDX_AIM_SNAP       = 1;
-define IDX_AIM_ASSIST     = 3;
-define IDX_STICKY_AIM     = 4;
-define IDX_BUNNY_HOP      = 8;
-define IDX_PING_ENEMY     = 10;
-define IDX_HOLD_BREATH    = 11;
-define IDX_RAPIDFIRE      = 12;
-define IDX_VMSPEED        = 13;
-define IDX_SLIDE_HOP      = 14;   
+define EDIT_COUNT               = 21;                   
+define AMOUNT_OF_VALNAME_IDX    = 22; 
+define MAX_MODS_COUNT           = 15;     // add one extra page at the end
+define ABOUT_IDX                = 15;          // new About page index      
 
-int HOThACKR6666560999;  
-int HOThACKR66665609; 
-int NOTOROIOUS112344_onoff;  
-int HOThACKR666656;  
-int HOThACKR6999999999; 
-int HOThACKR699999999; 
-int HOThACKR6990000000;
-int HOTHACKR111122223333;
-int HOTHACKR1111222233;
-int HOTHACKR11112266666;
-int HOTHACKR111122666;
-int HOTHACKR11117777777;
-int HOTHACKR111177;
-int __val, v;
+define IDX_RECOIL_CONTROL       = 0;
+define IDX_AIM_SNAP             = 1;
+define IDX_AIM_ASSIST           = 3;
+define IDX_STICKY_AIM           = 4;
+define IDX_BUNNY_HOP            = 8;
+define IDX_PING_ENEMY           = 10;
+define IDX_HOLD_BREATH          = 11;
+define IDX_RAPIDFIRE            = 12;
+define IDX_VMSPEED              = 13;
+define IDX_SLIDE_HOP            = 14;
 
-const string EvilBot_AimbotMOD          = "RECOIL CONTROL" ;
-const string HOThACKR6999999999MOD      = "AIM ASSIST" ;
-const string TRACKERMOD                 = "STICKY AIM" ; 
-const string BUNNY_HOP		            = "BUNNY HOP" ;
-const string PING			            = "PING ENEMY" ;
-const string HOLD			            = "SNIPER APNEA" ;
-const string RAPIDFIRE                  = "RAPID FIRE" ;
-// const string SLIDE_HOP                  = "SLIDE HOP" ;
-const string OFF			            = "OFF" ;    
-const string ON			                = "ON" ;   
-const string SCRIPT_ONOFF               = "EVILBOTv3";   
-const int8 ASCII_NUM[] = {48,49,50,51,52,53,54,55,56,57};  
-                                        
-const string NO_EDIT_VAR1  = "VENOMBYTE";
-const string NO_EDIT_VAR2  = "VENOMBYTE";
-const string NO_EDIT_VAR3  = "   v1.0";
+int menuPage_idx;  
+int recoilControl_on; 
+int aimSnap_enabled;  
+int stickNoiseFilter_on;  
+int aimAssist_mode; 
+int stickyAim_on; 
+int killshotz_on;
+int bunnyHop_on;
+int slideHop_on;
+int pingEnemy_on;
+int sniperApnea_on;
+int rapidFire_on;
+int rapidFire_speedProfile;
+int edit_tmp_val, tmp_val;
+int int_controller, out_console;
 
-const string STR_PRODUCT_NAME = "VENOMBYTE";
-const string STR_PRODUCT_VER  = "v1.0";
+const string EvilBot_AimbotMOD  = "RECOIL CONTROL" ;
+const string aimAssist_modeMOD  = "AIM ASSIST" ;
+const string TRACKERMOD         = "STICKY AIM" ; 
+const string BUNNY_HOP		    = "BUNNY HOP" ;
+const string PING			    = "PING ENEMY" ;
+const string HOLD			    = "SNIPER APNEA" ;
+const string RAPIDFIRE          = "RAPID FIRE" ;
+// const string SLIDE_HOP         = "SLIDE HOP" ;
+const string OFF			    = "OFF" ;    
+const string ON			        = "ON" ;   
+const string SCRIPT_ONOFF       = "EVILBOTv3";   
+const int8 ASCII_NUM[]          = {48,49,50,51,52,53,54,55,56,57};  
+
+const string NO_EDIT_VAR1       = "VENOMBYTE";
+const string NO_EDIT_VAR2       = "VENOMBYTE";
+const string NO_EDIT_VAR3       = "   v1.0";
+
+const string STR_PRODUCT_NAME   = "VENOMBYTE";
+const string STR_PRODUCT_VER    = "v1.0";
 
 
 const uint8 Options [] = {
@@ -173,22 +175,22 @@ const uint8 OptRange [][] = {
     { 0, 0 }   // 15 ABOUT (no editor)
 };
 const uint8 Min_Max_Options [][] = {
-  {0,1}, // 0
-  {0,1}, // 1
-  {0,1}, // 2
-  {0,2}, // 3
-  {0,1}, // 4
-  {0,1}, // 5
-  {0,3}, // 6
-  {0,1}, // 7
-  {0,1}, // 8
-  {0,1}, // 9
-  {0,1}, // 10
-  {0,1}, // 11
-  {0,1}, // 12
-  {0,5}, // 13
-  {0,1}, // 14
-  {0,0}  // 15 ABOUT (no options)
+    {0,1}, // 0
+    {0,1}, // 1
+    {0,1}, // 2
+    {0,2}, // 3
+    {0,1}, // 4
+    {0,1}, // 5
+    {0,3}, // 6
+    {0,1}, // 7
+    {0,1}, // 8
+    {0,1}, // 9
+    {0,1}, // 10
+    {0,1}, // 11
+    {0,1}, // 12
+    {0,5}, // 13
+    {0,1}, // 14
+    {0,0}  // 15 ABOUT (no options)
 };
 
 const string EditVarStr []={
@@ -227,9 +229,9 @@ const string MiscString[] = {
 
 // ---STICKY AIM lock helper: keep it ON and hidden at Size=18, Speed=90
 function trackermod_lock_on() {
-    HOThACKR699999999 = 1;   //STICKY AIM ON
-    NOTOROIOUS123499  = 18;  // Size
-    NOTOROIOUS877778  = 90;  // Speed
+    stickyAim_on = 1;   //STICKY AIM ON
+    stickyAim_size  = 18;  // Size
+    stickyAim_speed  = 90;  // Speed
 
     // persist these so they survive reboots
     set_pvar(SPVAR_4,  1);   //STICKY AIM ON
@@ -240,14 +242,14 @@ function trackermod_lock_on() {
 // ---STICKY AIM helper: toggle + enforce preset when ON
 function trackermod_apply(int on) {
     if (on) {
-        HOThACKR699999999 = 1;   // ON
-        NOTOROIOUS123499  = 18;  // Size
-        NOTOROIOUS877778  = 90;  // Speed
+        stickyAim_on = 1;   // ON
+        stickyAim_size  = 18;  // Size
+        stickyAim_speed  = 90;  // Speed
         set_pvar(SPVAR_4,  1);   // persist ON
         set_pvar(SPVAR_13, 18);  // persist Size
         set_pvar(SPVAR_14, 90);  // persist Speed
     } else {
-        HOThACKR699999999 = 0;   // OFF
+        stickyAim_on = 0;   // OFF
         set_pvar(SPVAR_4,  0);   // persist OFF
         // (no need to touch SPVAR_13/14 when OFF)
     }
@@ -255,69 +257,128 @@ function trackermod_apply(int on) {
 
 // --- KILLSHOTZ helper: force ON and persist
 function killshotz_force_on() {
-    HOThACKR6990000000 = 1;      // ON
+    killshotz_on = 1;      // ON
     set_pvar(SPVAR_26, 1);       // persist ON
 }
 
+// Detect and map controls to the active output console
+function setup_controls() {
+    out_console = get_console();        // What Zen is plugged into -> OUTPUT: PIO_PS4 / PIO_PS5 / PIO_XB1 / etc.
+    int_controller = get_controller();  // What is plugged into Zen ->INPUT: physical pad type (optional)
+
+    if (out_console == PIO_XB1) { // Xbox One / Series
+        Fire        = XB1_RT; // Right Trigger
+        Aim         = XB1_LT; // Left Trigger
+        Sprint      = XB1_LS; // Left Stick Click
+        aim_x       = XB1_RX; // Right Stick X-axis
+        aim_y       = XB1_RY; // Right Stick Y-axis
+        BTN_MELEE   = XB1_B;  // B button
+        BTN_TACTICAL= XB1_LB; // Left Bumper
+        BTN_LETHAL  = XB1_RB; // Right Bumper
+        Crouch      = XB1_B;  // B button
+        BTN_JUMP    = XB1_A;  // A button
+        BTN_MENU    = XB1_MENU;   // ≈ OPTIONS
+        BTN_SHARE   = XB1_VIEW;   // ≈ SHARE
+        moveLX      = XB1_LX; // Left Stick X-axis
+        moveLY      = XB1_LY; // Left Stick Y-axis
+        Ping        = XB1_UP; // D-pad Up
+        BTN_UP      = XB1_UP;
+        BTN_LEFT    = XB1_LEFT;
+        BTN_RIGHT   = XB1_RIGHT;
+        BTN_DOWN    = XB1_DOWN;
+        
+    } else { // PS4 fallback
+        Fire        = PS4_R2; // Right Trigger
+        Aim         = PS4_L2; // Left Trigger
+        Sprint      = PS4_L3; // Left Stick Click
+        aim_x       = PS4_RX; // Right Stick X-axis
+        aim_y       = PS4_RY; // Right Stick Y-axis
+        BTN_MELEE   = PS4_CIRCLE; // Circle button
+        BTN_TACTICAL= PS4_L1; // Left Bumper
+        BTN_LETHAL  = PS4_R1; // Right Bumper
+        Crouch      = PS4_CIRCLE; // Circle button
+        BTN_JUMP    = PS4_CROSS; // Cross button
+        BTN_MENU    = PS4_OPTIONS; // OPTIONS button
+        BTN_SHARE   = PS4_SHARE; // SHARE button
+        moveLX      = PS4_LX; // Left Stick X-axis
+        moveLY      = PS4_LY; // Left Stick Y-axis
+        Ping        = PS4_UP; // D-pad Up
+        BTN_UP      = PS4_UP; 
+        BTN_LEFT    = PS4_LEFT;
+        BTN_RIGHT   = PS4_RIGHT;
+        BTN_DOWN    = PS4_DOWN;
+    }
+
+    MenuButtons[0] = BTN_RIGHT;
+    MenuButtons[1] = BTN_LEFT;
+    MenuButtons[2] = BTN_UP;
+    MenuButtons[3] = BTN_DOWN;
+    MenuButtons[4] = BTN_JUMP;
+    MenuButtons[5] = BTN_MELEE;
+    MenuButtons[6] = BTN_MENU;
+    MenuButtons[7] = Aim;
+}
+
 init {
+    setup_controls();   // call this for cross-platform support
     // ================= AIM / ASSIST DEFAULTS =================
-    NOTOROIOUS112344_onoff   = 1;                          // AIM SNAP toggle (1 = ON by default)
-    HOThACKR666656           = get_pvar(SPVAR_2,  0, 1, 0); // General ON/OFF state storage
-    HOThACKR6999999999       = get_pvar(SPVAR_3, 0, 2, 2);  // AIM ASSIST mode (0=off, 1=ON, 2=Aim+Shot default)
+    aimSnap_enabled             = 1;                          // AIM SNAP toggle (1 = ON by default)
+    stickNoiseFilter_on         = get_pvar(SPVAR_2,  0, 1, 0); // General ON/OFF state storage
+    aimAssist_mode              = get_pvar(SPVAR_3, 0, 2, 2);  // AIM ASSIST mode (0=off, 1=ON, 2=Aim+Shot default)
     aim_assist_set_onoff(1);                               // Force AIM ASSIST to default ON (mode = Aim+Shot)
     
     // ================= MOVEMENT MODS =================
-    HOTHACKR1111222233       = 0;                          // SLIDE HOP default OFF
+    slideHop_on                 = 0;                          // SLIDE HOP default OFF
     trackermod_lock_on();                                  // STICKY AIM lock ON at preset (Size=18, Speed=90)
-    HOThACKR66665609         = 1;                          // RECOIL CONTROL default ON
-    HOTHACKR111122223333     = 1;                          // BUNNY_HOP default ON
-    
+    recoilControl_on            = 1;                          // RECOIL CONTROL default ON
+    bunnyHop_on                 = 1;                          // BUNNY_HOP default ON
+
     // ================= OTHER CORE MODS =================
-    HOThACKR6990000000       = get_pvar(SPVAR_26, 0, 1, 1); // KILLSHOTZ default ON
+    killshotz_on                = get_pvar(SPVAR_26, 0, 1, 1); // KILLSHOTZ default ON
     killshotz_force_on();                                  // Ensure KILLSHOTZ is always ON/persisted
-    HOTHACKR11112266666      = 1;                          // PING ENEMY default ON
-    HOTHACKR111122666        = 1;                          // HOLD BREATH (SNIPER APNEA) default ON
-    HOTHACKR11117777777      = 1;                          // RAPIDFIRE default ON
-    HOTHACKR111177           = get_pvar(SPVAR_35, 1, 5, 0); // RAPIDFIRE speed profile
-    
+    pingEnemy_on                = 1;                          // PING ENEMY default ON
+    sniperApnea_on              = 1;                          // HOLD BREATH (SNIPER APNEA) default ON
+    rapidFire_on                = 1;                          // RAPIDFIRE default ON
+    rapidFire_speedProfile      = get_pvar(SPVAR_35, 1, 5, 0); // RAPIDFIRE speed profile
+
     // ================= AIM SNAP SETTINGS =================
-    NOTOROIOUS112344         = 3;                          // AIM SNAP FOV (default 3)
-    NOTOROIOUS13435          = 10;                         // Deadzone threshold
-    NOTOROIOUS138908         = 28;                         // AIM ASSIST VM Speed (default 50)
-    NOTOROIOUS65757          = 7;                         // AIM ASSIST Width Shape
-    NOTOROIOUS89099          = 5; // Vertical adjustment
-    NOTOROIOUS89777          = 4; // Size
-    NOTOROIOUS00909          = 8; // Time
+    aimSnap_resolution          = 3;                          // AIM SNAP FOV (default 3)
+    input_deadzone              = 11;                         // Deadzone threshold
+    aimAssist_vmSpeed           = 23;                         // AIM ASSIST VM Speed (default 50)
+    aimAssist_width             = 7;                         // AIM ASSIST Width Shape
+    aimAssist_vertical          = 5; // Vertical adjustment
+    aimAssist_size              = 4; // Size
+    aimAssist_time              = 8; // Time
     
     // ================= TRACKER / STICKY AIM SETTINGS =================
-    NOTOROIOUS123499         = 18; // STICKY AIM Size
-    NOTOROIOUS877778         = 45; // STICKY AIM Speed
+    stickyAim_size              = 18; // STICKY AIM Size
+    stickyAim_speed             = 45; // STICKY AIM Speed
     
     // ================= RECOIL CONTROL =================
-    NOTOROIOUS87711          = 22;                                                    // Vertical Recoil default
-    NOTOROIOUS1998           = get_pvar(SPVAR_17, 1, 10, 1);   // Bunny Hop: delay multiplier
-    NOTOROIOUS20000          = get_pvar(SPVAR_18, 1, 999, 100);// Bunny Hop: crouch/jump timing
-    NOTOROIOUS201009         = get_pvar(SPVAR_20, 1, 99, 5);   // AA booster: jitter frequency
-    NOTOROIOUS20787          = get_pvar(SPVAR_21, 1, 2000, 1500); // AA booster: jitter delay
+    recoil_y_compensation       = 22;                                                    // Vertical Recoil default
+    bunnyHop_delayMultiplier    = get_pvar(SPVAR_17, 1, 10, 1);   // Bunny Hop: delay multiplier
+    bunnyHop_timing_ms          = get_pvar(SPVAR_18, 1, 999, 100);// Bunny Hop: crouch/jump timing
+    aaBooster_frequency         = get_pvar(SPVAR_20, 1, 99, 5);   // AA booster: jitter frequency
+    aaBooster_delay_ms          = get_pvar(SPVAR_21, 1, 2000, 1500); // AA booster: jitter delay
     
     // ================= HOTKEYS & EXTRA VARIABLES =================
-    HOTKEY19                 = get_pvar(SPVAR_23, 1, 100, 13); // Custom hotkey #19
-    HOThACKR1232             = get_pvar(SPVAR_24, 1, 100, 50); // General param slot
-    HOThACKR129685788        = get_pvar(SPVAR_25, 1, 100, 9);  // General param slot
-    RadiuS                   = 10;                                                    // Polar Aim Assist radius
+    userHotkeyCode              = get_pvar(SPVAR_23, 1, 100, 13); // Custom hotkey #19
+    param_slot_a                = get_pvar(SPVAR_24, 1, 100, 50); // General param slot
+    param_slot_b                = get_pvar(SPVAR_25, 1, 100, 9);  // General param slot
+    polarAssist_radius          = 10;                                                    // Polar Aim Assist radius
     
     // ================= TIMINGS (RAPID FIRE) =================
-    HOThACKR1296857885675858 = get_pvar(SPVAR_30, 1, 2000, 1000); // Ping cooldown
-    HOThACKR129685788567     = get_pvar(SPVAR_33, 1, 1000, 4);    // AA random offset
-    HOThACKR1878787879       = 7;                               // RAPID FIRE speed (ms between shots)
-    HOThACKR187878           = 22;                              // RAPID FIRE release (ms)
+    pingCooldown_ms             = get_pvar(SPVAR_30, 1, 2000, 1000); // Ping cooldown
+    rapidFire_on_ms             = get_pvar(SPVAR_33, 1, 1000, 4);    // AA random offset
+    rapidFire_off_ms            = 7;                               // RAPID FIRE speed (ms between shots)
+    rapidFire_release_ms        = 22;                              // RAPID FIRE release (ms)
     
     // ================= GENERAL =================
     slot_numb = get_slot();                                     // Current slot number on Zen device
 
 
-    // active_aiming depends on NOTOROIOUS138908/89099 already loaded above
-    active_aiming = (((360 + NOTOROIOUS138908) / NOTOROIOUS138908) + 1) * NOTOROIOUS89099;
+    // active_aiming depends on aimAssist_vmSpeed/89099 already loaded above
+    active_aiming = (((360 + aimAssist_vmSpeed) / aimAssist_vmSpeed) + 1) * aimAssist_vertical;
 
     cls_oled(0);
 }
@@ -325,7 +386,7 @@ init {
 define On = 1;
 define Off = 0;
 int SaverOn = TRUE,Timer,NotoriouscriptzVIP_x,NotoriouscriptzVIP_y,NotoriouscriptzVIP_t,NotoriouscriptzVIP_c = 1,X,CurRX,CurRY,CurrentRX,CurrentRY,ReT,anti_recoil_y,lx_aim,ly_aim,input_mag,first_aim,aim_speed,aim_width,active_aiming_counter,active_aiming,_angle,toggle_active_aiming = 1,TrackerAngle = 270;
-define HOThACKR6990000000_Polar = 0, HOThACKR6990000000_Reducer = 1, PolarValue = 32767, PolarVIAssist = 1,TimeToShowIntroPicture = 30000;
+define killshotz_on_Polar = 0, killshotz_on_Reducer = 1, PolarValue = 32767, PolarVIAssist = 1,TimeToShowIntroPicture = 30000;
 int KILLSHOTZVIAngle, VISpeed, PolarAngle = 30; // balanced default
 
 int display_black,count_black;
@@ -340,80 +401,80 @@ int BLUE=1;
 
 // --- map edit index -> variable (READ)
 function get_edit_value(int ix) {
-    if (ix == 0)  return NOTOROIOUS112344;
-    if (ix == 1)  return NOTOROIOUS13435;
-    if (ix == 2)  return NOTOROIOUS138908;
-    if (ix == 3)  return NOTOROIOUS65757;
-    if (ix == 4)  return NOTOROIOUS89099;
-    if (ix == 5)  return NOTOROIOUS89777;
-    if (ix == 6)  return NOTOROIOUS00909;
-    if (ix == 7)  return NOTOROIOUS123499;
-    if (ix == 8)  return NOTOROIOUS877778;
-    if (ix == 9)  return NOTOROIOUS87711;
-    if (ix == 10) return NOTOROIOUS1998;
-    if (ix == 11) return NOTOROIOUS20000;
-    if (ix == 12) return NOTOROIOUS201009;
-    if (ix == 13) return NOTOROIOUS20787;
-    if (ix == 14) return RadiuS;
-    if (ix == 15) return HOThACKR1232;
-    if (ix == 16) return HOThACKR129685788;
-    if (ix == 17) return HOThACKR1296857885675858;
-    if (ix == 18) return HOThACKR129685788567;
-    if (ix == 19) return HOThACKR1878787879;
-    if (ix == 20) return HOThACKR187878;
+    if (ix == 0)  return aimSnap_resolution;
+    if (ix == 1)  return input_deadzone;
+    if (ix == 2)  return aimAssist_vmSpeed;
+    if (ix == 3)  return aimAssist_width;
+    if (ix == 4)  return aimAssist_vertical;
+    if (ix == 5)  return aimAssist_size;
+    if (ix == 6)  return aimAssist_time;
+    if (ix == 7)  return stickyAim_size;
+    if (ix == 8)  return stickyAim_speed;
+    if (ix == 9)  return recoil_y_compensation;
+    if (ix == 10) return bunnyHop_delayMultiplier;
+    if (ix == 11) return bunnyHop_timing_ms;
+    if (ix == 12) return aaBooster_frequency;
+    if (ix == 13) return aaBooster_delay_ms;
+    if (ix == 14) return polarAssist_radius;
+    if (ix == 15) return param_slot_a;
+    if (ix == 16) return param_slot_b;
+    if (ix == 17) return pingCooldown_ms;
+    if (ix == 18) return rapidFire_on_ms;
+    if (ix == 19) return rapidFire_off_ms;
+    if (ix == 20) return rapidFire_release_ms;
     return 0;
 }
 
 // --- map edit index -> variable (WRITE)
 function set_edit_value(int ix, int v) {
-    if (ix == 0)  { NOTOROIOUS112344            = v; return; }
-    if (ix == 1)  { NOTOROIOUS13435             = v; return; }
-    if (ix == 2)  { NOTOROIOUS138908            = v; return; }
-    if (ix == 3)  { NOTOROIOUS65757             = v; return; }
-    if (ix == 4)  { NOTOROIOUS89099             = v; return; }
-    if (ix == 5)  { NOTOROIOUS89777             = v; return; }
-    if (ix == 6)  { NOTOROIOUS00909             = v; return; }
-    if (ix == 7)  { NOTOROIOUS123499            = v; return; }
-    if (ix == 8)  { NOTOROIOUS877778            = v; return; }
-    if (ix == 9)  { NOTOROIOUS87711             = v; return; }
-    if (ix == 10) { NOTOROIOUS1998              = v; return; }
-    if (ix == 11) { NOTOROIOUS20000             = v; return; }
-    if (ix == 12) { NOTOROIOUS201009            = v; return; }
-    if (ix == 13) { NOTOROIOUS20787             = v; return; }
-    if (ix == 14) { RadiuS                      = v; return; }
-    if (ix == 15) { HOThACKR1232                = v; return; }
-    if (ix == 16) { HOThACKR129685788           = v; return; }
-    if (ix == 17) { HOThACKR1296857885675858    = v; return; }
-    if (ix == 18) { HOThACKR129685788567        = v; return; }
-    if (ix == 19) { HOThACKR1878787879          = v; return; }
-    if (ix == 20) { HOThACKR187878              = v; return; }
+    if (ix == 0)  { aimSnap_resolution            = v; return; }
+    if (ix == 1)  { input_deadzone             = v; return; }
+    if (ix == 2)  { aimAssist_vmSpeed            = v; return; }
+    if (ix == 3)  { aimAssist_width             = v; return; }
+    if (ix == 4)  { aimAssist_vertical             = v; return; }
+    if (ix == 5)  { aimAssist_size             = v; return; }
+    if (ix == 6)  { aimAssist_time             = v; return; }
+    if (ix == 7)  { stickyAim_size            = v; return; }
+    if (ix == 8)  { stickyAim_speed            = v; return; }
+    if (ix == 9)  { recoil_y_compensation             = v; return; }
+    if (ix == 10) { bunnyHop_delayMultiplier              = v; return; }
+    if (ix == 11) { bunnyHop_timing_ms             = v; return; }
+    if (ix == 12) { aaBooster_frequency            = v; return; }
+    if (ix == 13) { aaBooster_delay_ms             = v; return; }
+    if (ix == 14) { polarAssist_radius                      = v; return; }
+    if (ix == 15) { param_slot_a                = v; return; }
+    if (ix == 16) { param_slot_b           = v; return; }
+    if (ix == 17) { pingCooldown_ms    = v; return; }
+    if (ix == 18) { rapidFire_on_ms        = v; return; }
+    if (ix == 19) { rapidFire_off_ms          = v; return; }
+    if (ix == 20) { rapidFire_release_ms              = v; return; }
 }
 
 function get_option_value(int ix) {
-    if (ix == IDX_RECOIL_CONTROL) return HOThACKR66665609;
-    if (ix == IDX_AIM_SNAP)       return NOTOROIOUS112344_onoff;
+    if (ix == IDX_RECOIL_CONTROL) return recoilControl_on;
+    if (ix == IDX_AIM_SNAP)       return aimSnap_enabled;
     // AIM ASSIST mode (0..2)
     if (ix == IDX_AIM_ASSIST) {
-        if (HOThACKR6999999999 == 2) {
+        if (aimAssist_mode == 2) {
             return 1; // ON
         } else {
             return 0; // OFF
         }
     }
-    if (ix == IDX_STICKY_AIM)     return HOThACKR699999999;
-    if (ix == 5)                  return HOThACKR6990000000; // KILLSHOTZ (kept)
-    if (ix == IDX_BUNNY_HOP)      return HOTHACKR111122223333;
-    if (ix == IDX_PING_ENEMY)     return HOTHACKR11112266666;
-    if (ix == IDX_HOLD_BREATH)    return HOTHACKR111122666;
-    if (ix == IDX_RAPIDFIRE)      return HOTHACKR11117777777;
-    if (ix == IDX_VMSPEED)        return HOTHACKR111177;
-    if (ix == IDX_SLIDE_HOP)      return HOTHACKR1111222233;   // <— NEW
+    if (ix == IDX_STICKY_AIM)     return stickyAim_on;
+    if (ix == 5)                  return killshotz_on; // KILLSHOTZ (kept)
+    if (ix == IDX_BUNNY_HOP)      return bunnyHop_on;
+    if (ix == IDX_PING_ENEMY)     return pingEnemy_on;
+    if (ix == IDX_HOLD_BREATH)    return sniperApnea_on;
+    if (ix == IDX_RAPIDFIRE)      return rapidFire_on;
+    if (ix == IDX_VMSPEED)        return rapidFire_speedProfile;
+    if (ix == IDX_SLIDE_HOP)      return slideHop_on;   // <— NEW
     return 0;
 }
 
 function set_option_value(int ix, int v) {
-    if (ix == IDX_RECOIL_CONTROL) { HOThACKR66665609 = v; return; }
-    if (ix == IDX_AIM_SNAP)       { NOTOROIOUS112344_onoff = v; return; }
+    if (ix == IDX_RECOIL_CONTROL) { recoilControl_on = v; return; }
+    if (ix == IDX_AIM_SNAP)       { aimSnap_enabled = v; return; }
 
     // AIM ASSIST: mapped to ON/OFF preset (already in your code)
     if (ix == IDX_AIM_ASSIST) {
@@ -432,17 +493,17 @@ function set_option_value(int ix, int v) {
     }
 
     if (ix == 5)  { killshotz_force_on(); return; } // KILLSHOTZ stays forced ON
-    if (ix == IDX_BUNNY_HOP)   { HOTHACKR111122223333 = v; return; }
-    if (ix == IDX_PING_ENEMY)  { HOTHACKR11112266666 = v; return; }
-    if (ix == IDX_HOLD_BREATH) { HOTHACKR111122666   = v; return; }
+    if (ix == IDX_BUNNY_HOP)   { bunnyHop_on = v; return; }
+    if (ix == IDX_PING_ENEMY)  { pingEnemy_on = v; return; }
+    if (ix == IDX_HOLD_BREATH) { sniperApnea_on   = v; return; }
     if (ix == IDX_RAPIDFIRE) {
-            HOTHACKR11117777777 = v;
+            rapidFire_on = v;
             set_pvar(SPVAR_32, v);
-            if (v) { HOThACKR1878787879 = 7; HOThACKR187878 = 22; set_pvar(SPVAR_34,7); set_pvar(SPVAR_37,22); }
+            if (v) { rapidFire_off_ms = 7; rapidFire_release_ms = 22; set_pvar(SPVAR_34,7); set_pvar(SPVAR_37,22); }
             return;
         }
-    if (ix == IDX_VMSPEED) { HOTHACKR111177 = v; return; }
-    if (ix == IDX_SLIDE_HOP) { HOTHACKR1111222233 = v; return; }
+    if (ix == IDX_VMSPEED) { rapidFire_speedProfile = v; return; }
+    if (ix == IDX_SLIDE_HOP) { slideHop_on = v; return; }
 }
 
 
@@ -471,25 +532,24 @@ function prev_index(int j) {
 function aim_assist_set_onoff(int on) {
     if (on) {
         // ON means the internal mode is "Aim + Shot" (=2)
-        HOThACKR6999999999 = 2;
+        aimAssist_mode = 2;
 
-        // Locked presets (smoother, steadier)
-        NOTOROIOUS138908 = 50;  // Vm Speed (was 70)
-        NOTOROIOUS65757  = 14;  // Width Shape (was 16)
-        NOTOROIOUS89099  = 6;   // Vertical
-        NOTOROIOUS89777  = 6;   // Size
-        NOTOROIOUS00909  = 10;  // Time
+        // Tight sticky bubble preset
+        aimAssist_vmSpeed = 32;  // Vm Speed
+        aimAssist_width   = 10;  // Width Shape
+        aimAssist_vertical= 1;   // Vertical
+        aimAssist_size    = 8;  // Size
+        aimAssist_time    = 10;  // Time
 
         // Persist so they survive reboots
-        set_pvar(SPVAR_3,  2);   // AIM ASSIST mode
-        set_pvar(SPVAR_8,  50);  // Vm Speed
-        set_pvar(SPVAR_9,  14);  // Width Shape
-        set_pvar(SPVAR_10, 6);   // Vertical
-        set_pvar(SPVAR_11, 6);   // Size
-        set_pvar(SPVAR_12, 10);  // Time
+        set_pvar(SPVAR_3,  2);
+        set_pvar(SPVAR_8,  30);
+        set_pvar(SPVAR_9,  10);
+        set_pvar(SPVAR_10, 7);
+        set_pvar(SPVAR_11, 10);
+        set_pvar(SPVAR_12, 12);
     } else {
-        // OFF
-        HOThACKR6999999999 = 0;
+        aimAssist_mode = 0;
         set_pvar(SPVAR_3, 0);
     }
 }
@@ -502,6 +562,7 @@ main {
     if(GREEN==1){GREEN1=TRUE;}
     if(BLUE==1){BLUE1=TRUE;}
     CountLED = random(1,300);
+
 	if(((CountLED)>=1) && (CountLED)<=100){
         if(RED1==TRUE){
             RED+=1;set_rgb(RED,GREEN,BLUE);
@@ -512,7 +573,7 @@ main {
             set_rgb(RED,GREEN,BLUE);
             CountLED = random(1,300);
         }
-}
+    }
 	if(((CountLED)>=101) && (CountLED)<=200){
         if(GREEN1==TRUE){
             GREEN+=1;
@@ -535,7 +596,7 @@ main {
             }
         }
 
-    deadzone(PS4_L2, PS4_R2, 100, 100);
+    deadzone(Aim, Fire, 100, 100);
 
 	if(get_ival(Aim) > 1)set_val(Aim, 100); 
 	if(get_ival(Fire) > 1)set_val(Fire, 100); 
@@ -576,7 +637,8 @@ main {
             display_mod( center_x(sizeof(SCRIPT_ONOFF)- 1, OLED_FONT_MEDIUM_WIDTH) ,SCRIPT_ONOFF [0],HOTHACKER545459999 ,1);
             HOTHACKER54545DDD = 2000;
                 
-            if(!HOTHACKER545459999) set_Virtual_Machine_Speed(VM_Default); 
+            if(!HOTHACKER545459999) 
+                set_Virtual_Machine_Speed(VM_Default); 
         }
     }
                             
@@ -590,12 +652,13 @@ main {
 
     if(HOTHACKER545459999){
                         
-        if(HOTHACKER54545454 || HOTHACKE) set_Virtual_Machine_Speed(VM_Default);
+        if(HOTHACKER54545454 || HOTHACKE) 
+            set_Virtual_Machine_Speed(VM_Default);
         if(HOTHACKER54545){                
                     
             cls_oled(0);                        
         
-            if(EditVal[ HOThACKR6666560999 ] == 0 ){  
+            if(EditVal[ menuPage_idx ] == 0 ){  
                                 
                 line_oled(1,45,127,45,1,0);    
                 print( center_x( 10, OLED_FONT_SMALL_WIDTH ), 15, OLED_FONT_SMALL, 1, NO_EDIT_VAR1[0] ); 
@@ -611,183 +674,183 @@ main {
                 HOTHACKER54545( get_edit_value(adjust_variable_idx) );
 
                 // read -> edit -> write back
-                __val = get_edit_value(adjust_variable_idx);
-                __val = edit_val(__val);
-                set_edit_value(adjust_variable_idx, __val);
-}
-    } 
-    if(HOTHACK) { 
-        
-        cls_oled(0);       
-                
-        draw_rectangle(); 
-
-    if (HOThACKR6666560999 == ABOUT_IDX) {
-        display_about_page();
-    } else {
-        if (HOThACKR6666560999 == IDX_RECOIL_CONTROL)
-            display_mod(center_x(sizeof(EvilBot_AimbotMOD) - 1, OLED_FONT_SMALL_WIDTH),
-                        EvilBot_AimbotMOD[0], HOThACKR66665609, Options[HOThACKR6666560999]);
-
-        if (HOThACKR6666560999 == IDX_AIM_ASSIST)
-            display_mod(center_x(sizeof(HOThACKR6999999999MOD) - 1, OLED_FONT_SMALL_WIDTH),
-                        HOThACKR6999999999MOD[0], get_option_value(IDX_AIM_ASSIST), 1);
-
-        if (HOThACKR6666560999 == IDX_STICKY_AIM)
-            display_mod(center_x(sizeof(TRACKERMOD) - 1, OLED_FONT_SMALL_WIDTH),
-                        TRACKERMOD[0], HOThACKR699999999, Options[HOThACKR6666560999]);
-
-        if (HOThACKR6666560999 == IDX_BUNNY_HOP)
-            display_mod(center_x(sizeof(BUNNY_HOP) - 1, OLED_FONT_SMALL_WIDTH),
-                        BUNNY_HOP[0], HOTHACKR111122223333, Options[HOThACKR6666560999]);
-
-        if (HOThACKR6666560999 == IDX_PING_ENEMY)
-            display_mod(center_x(sizeof(PING) - 1, OLED_FONT_SMALL_WIDTH),
-                        PING[0], HOTHACKR11112266666, Options[HOThACKR6666560999]);
-
-        if (HOThACKR6666560999 == IDX_HOLD_BREATH)
-            display_mod(center_x(sizeof(HOLD) - 1, OLED_FONT_SMALL_WIDTH),
-                        HOLD[0], HOTHACKR111122666, Options[HOThACKR6666560999]);
-
-        if (HOThACKR6666560999 == IDX_RAPIDFIRE)
-            display_mod(center_x(sizeof(RAPIDFIRE) - 1, OLED_FONT_SMALL_WIDTH),
-                        RAPIDFIRE[0], HOTHACKR11117777777, Options[HOThACKR6666560999]);
-
-        // if (HOThACKR6666560999 == IDX_SLIDE_HOP)
-        //     display_mod(center_x(sizeof(SLIDE_HOP) - 1, OLED_FONT_SMALL_WIDTH),
-        //                 SLIDE_HOP[0], HOTHACKR1111222233, Options[HOThACKR6666560999]);
-}
-HOTHACK = FALSE;
-    } 
-    if(HOTHACKER543232327){           
-        
-        cls_oled(1);            
-                    
-            HOTHACKE = FALSE;   
-        HOTHACKER543232327 = FALSE;  
-        display_black = TRUE;                                   
-    }
-    if(display_black)         
-    {                            
-        count_black += get_rtime();
-        if(count_black >= TimeToShowIntroPicture)   
-        {                        
-            cls_oled(1);         
-            count_black = 0;      
-            display_black = FALSE; 
-        }                         
-    }
-
-    if(HOTHACKER54545454){
-        block_all_inputs();
-
-        if(MenuTimeOut){
-            CheckIfBtnIsPressed();
-        }
-
-        if(event_release(PS4_CIRCLE)){
-            HOTHACKER54545454 = FALSE;
-            HOTHACKER54545    = FALSE;
-            HOTHACKE          = TRUE;
-            HOTHACK           = TRUE;
-        }
-
-        if(!get_ival(Aim) && event_press(PS4_DOWN)){            
-            adjust_variable_idx ++;                 
-            if(adjust_variable_idx > OptRange[ HOThACKR6666560999 ][ 1 ])  adjust_variable_idx = OptRange[ HOThACKR6666560999 ][ 1 ]; 
-            HOTHACK = FALSE;      
-            HOTHACKER54545 = TRUE;        
-        }          
-        if(!get_ival(Aim) && event_press(PS4_UP)){  
-            adjust_variable_idx --;                                      
-            if(adjust_variable_idx < OptRange[ HOThACKR6666560999 ][ 0 ]) adjust_variable_idx = OptRange[ HOThACKR6666560999 ][ 0 ];
-            HOTHACK = FALSE;      
-            HOTHACKER54545 = TRUE;        
-        }     
-
-        if(MenuTimeOut){
-            CheckIfBtnIsPressed();
-        }
-    }
-
-    if(get_ival(Aim) && event_press(PS4_OPTIONS)){  
-        HOTHACKE = TRUE;  
-        SaverOn = FALSE;                     
-        HOThACKR6666560999  = 0;  
-        HOTHACK = TRUE;      
-        HOTHACKER54545 = FALSE;        
-        MenuTimeOut  = menu_time_active;
-    } 
-    
-                
-    if (HOTHACKE) {
-        block_all_inputs();
-
-        if (event_press(PS4_CIRCLE)) {
-            HOTHACKE = FALSE;
-            HOTHACKER54545454 = FALSE;
-            combo_run(MESSAGE);
-        }
-
-        if (event_press(PS4_CROSS)) {
-            // only enter editor when the current mod has editable values
-            if (EditVal[HOThACKR6666560999]) {
-                HOTHACKE = FALSE;
-                SaverOn = FALSE;        // keep saver off while editing values
-                adjust_variable_idx = OptRange[HOThACKR6666560999][0];
-                HOTHACKER54545454 = TRUE;
-                HOTHACKER54545 = TRUE;
-            } 
-        }
-
-        if (!get_ival(Aim) && event_press(PS4_DOWN)) {
-            HOThACKR6666560999 = next_index(HOThACKR6666560999);
-        }
-        if (!get_ival(Aim) && event_press(PS4_UP)) {
-            HOThACKR6666560999 = prev_index(HOThACKR6666560999);
-        }
-
-
-        if (!get_ival(Aim)) {
-            if (event_press(PS4_RIGHT)) {
-                v = get_option_value(HOThACKR6666560999);
-                v = f_go_back(v);
-                set_option_value(HOThACKR6666560999, v);
+                edit_tmp_val = get_edit_value(adjust_variable_idx);
+                edit_tmp_val = edit_val(edit_tmp_val);
+                set_edit_value(adjust_variable_idx, edit_tmp_val);
             }
-            if (event_press(PS4_LEFT)) {
-                v = get_option_value(HOThACKR6666560999);
-                v = f_go_forward(v);
-                set_option_value(HOThACKR6666560999, v);
-            }
-        }
-
-        HOTHACK = TRUE;
-        set_val(PS4_RIGHT, 0);
-        set_val(PS4_LEFT, 0);
-        set_val(PS4_UP, 0);
-        set_val(PS4_DOWN, 0);
-
-        if (MenuTimeOut) {
-            CheckIfBtnIsPressed();
-        }
-    }
-
-    
-    if(NOTOROIOUS112344_onoff){
-                CurrentRX = get_val(aim_x);
-                CurrentRY = get_val(aim_y);
-
-                CurrentRX = GetAIM_SNAP(CurrentRX, NOTOROIOUS112344);
-                CurrentRY = GetAIM_SNAP(CurrentRY, NOTOROIOUS112344);
-
-                set_val(aim_x, clamp(CurrentRX, -100, 100));
-                set_val(aim_y, clamp(CurrentRY, -100, 100));
+        } 
+        if(HOTHACK) { 
             
+            cls_oled(0);       
+                    
+            draw_rectangle(); 
+
+            if (menuPage_idx == ABOUT_IDX) {
+                display_about_page();
+            } else {
+                    if (menuPage_idx == IDX_RECOIL_CONTROL)
+                        display_mod(center_x(sizeof(EvilBot_AimbotMOD) - 1, OLED_FONT_SMALL_WIDTH),
+                                    EvilBot_AimbotMOD[0], recoilControl_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_AIM_ASSIST)
+                        display_mod(center_x(sizeof(aimAssist_modeMOD) - 1, OLED_FONT_SMALL_WIDTH),
+                                    aimAssist_modeMOD[0], get_option_value(IDX_AIM_ASSIST), 1);
+
+                    if (menuPage_idx == IDX_STICKY_AIM)
+                        display_mod(center_x(sizeof(TRACKERMOD) - 1, OLED_FONT_SMALL_WIDTH),
+                                    TRACKERMOD[0], stickyAim_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_BUNNY_HOP)
+                        display_mod(center_x(sizeof(BUNNY_HOP) - 1, OLED_FONT_SMALL_WIDTH),
+                                    BUNNY_HOP[0], bunnyHop_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_PING_ENEMY)
+                        display_mod(center_x(sizeof(PING) - 1, OLED_FONT_SMALL_WIDTH),
+                                    PING[0], pingEnemy_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_HOLD_BREATH)
+                        display_mod(center_x(sizeof(HOLD) - 1, OLED_FONT_SMALL_WIDTH),
+                                    HOLD[0], sniperApnea_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_RAPIDFIRE)
+                        display_mod(center_x(sizeof(RAPIDFIRE) - 1, OLED_FONT_SMALL_WIDTH),
+                                    RAPIDFIRE[0], rapidFire_on, Options[menuPage_idx]);
+
+                    // if (menuPage_idx == IDX_SLIDE_HOP)
+                    //     display_mod(center_x(sizeof(SLIDE_HOP) - 1, OLED_FONT_SMALL_WIDTH),
+                    //                 SLIDE_HOP[0], slideHop_on, Options[menuPage_idx]);
+            }
+            HOTHACK = FALSE;
+        } 
+
+        if(HOTHACKER543232327){           
+            
+            cls_oled(1);            
+                        
+                HOTHACKE = FALSE;   
+            HOTHACKER543232327 = FALSE;  
+            display_black = TRUE;                                   
         }
-                
-                if( HOThACKR666656 ) { 
-                    RemoveStickNoise();
+
+        if(display_black){                            
+            count_black += get_rtime();
+            if(count_black >= TimeToShowIntroPicture)   
+            {                        
+                cls_oled(1);         
+                count_black = 0;      
+                display_black = FALSE; 
+            }                         
+        }
+
+        if(HOTHACKER54545454){
+            block_all_inputs();
+
+            if(MenuTimeOut){
+                CheckIfBtnIsPressed();
+            }
+
+            if(event_release(BTN_MELEE)){
+                HOTHACKER54545454 = FALSE;
+                HOTHACKER54545    = FALSE;
+                HOTHACKE          = TRUE;
+                HOTHACK           = TRUE;
+            }
+
+            if(!get_ival(Aim) && event_press(PS4_DOWN)){            
+                adjust_variable_idx ++;                 
+                if(adjust_variable_idx > OptRange[ menuPage_idx ][ 1 ])  adjust_variable_idx = OptRange[ menuPage_idx ][ 1 ]; 
+                HOTHACK = FALSE;      
+                HOTHACKER54545 = TRUE;        
+            }          
+            if(!get_ival(Aim) && event_press(PS4_UP)){  
+                adjust_variable_idx --;                                      
+                if(adjust_variable_idx < OptRange[ menuPage_idx ][ 0 ]) adjust_variable_idx = OptRange[ menuPage_idx ][ 0 ];
+                HOTHACK = FALSE;      
+                HOTHACKER54545 = TRUE;        
+            }     
+
+            if(MenuTimeOut){
+                CheckIfBtnIsPressed();
+            }
+        }
+
+        if(get_ival(Aim) && event_press(BTN_MENU)){  
+            HOTHACKE = TRUE;  
+            SaverOn = FALSE;                     
+            menuPage_idx  = 0;  
+            HOTHACK = TRUE;      
+            HOTHACKER54545 = FALSE;        
+            MenuTimeOut  = menu_time_active;
+        } 
+        
+                    
+        if (HOTHACKE) {
+            block_all_inputs();
+
+            if (event_press(PS4_CIRCLE)) {
+                HOTHACKE = FALSE;
+                HOTHACKER54545454 = FALSE;
+                combo_run(MESSAGE);
+            }
+
+            if (event_press(BTN_JUMP)) {
+                // only enter editor when the current mod has editable values
+                if (EditVal[menuPage_idx]) {
+                    HOTHACKE = FALSE;
+                    SaverOn = FALSE;        // keep saver off while editing values
+                    adjust_variable_idx = OptRange[menuPage_idx][0];
+                    HOTHACKER54545454 = TRUE;
+                    HOTHACKER54545 = TRUE;
+                } 
+            }
+
+            if (!get_ival(Aim) && event_press(PS4_DOWN)) {
+                menuPage_idx = next_index(menuPage_idx);
+            }
+            if (!get_ival(Aim) && event_press(PS4_UP)) {
+                menuPage_idx = prev_index(menuPage_idx);
+            }
+
+
+            if (!get_ival(Aim)) {
+                if (event_press(PS4_RIGHT)) {
+                    tmp_val = get_option_value(menuPage_idx);
+                    tmp_val = f_go_back(tmp_val);
+                    set_option_value(menuPage_idx, tmp_val);
                 }
+                if (event_press(PS4_LEFT)) {
+                    tmp_val = get_option_value(menuPage_idx);
+                    tmp_val = f_go_forward(tmp_val);
+                    set_option_value(menuPage_idx, tmp_val);
+                }
+            }
+
+            HOTHACK = TRUE;
+            set_val(PS4_RIGHT, 0);
+            set_val(PS4_LEFT, 0);
+            set_val(PS4_UP, 0);
+            set_val(PS4_DOWN, 0);
+
+            if (MenuTimeOut) {
+                CheckIfBtnIsPressed();
+            }
+        }
+
+        if(aimSnap_enabled){
+            CurrentRX = get_val(aim_x);
+            CurrentRY = get_val(aim_y);
+
+            CurrentRX = GetAIM_SNAP(CurrentRX, aimSnap_resolution);
+            CurrentRY = GetAIM_SNAP(CurrentRY, aimSnap_resolution);
+
+            set_val(aim_x, clamp(CurrentRX, -100, 100));
+            set_val(aim_y, clamp(CurrentRY, -100, 100));
+                
+            }
+                
+        if( stickNoiseFilter_on ) { 
+            RemoveStickNoise();
+        }
         
         if (SaverOn){
             Timer += get_rtime();
@@ -799,189 +862,184 @@ HOTHACK = FALSE;
             cls_oled(0);
         }
 
-        if (HOThACKR66665609) {
+        if (recoilControl_on) {
             if (get_val(Aim) && get_val(Fire) || get_ival(Fire)) {
                 combo_run(EvilBot_Aimbot);
             }
         }
-	
-	if (HOThACKR6999999999 == 1)
-		{
-		if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))){
-			Soft_Aim();}
-			
-		if (get_val(Aim) && get_val(Fire)){
-			combo_run(EvilBotV4);
-            combo_run(aa_booster_combo);}
-			}
-			if (HOThACKR6999999999 == 2)
-		{
-		if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))){
-			Soft_Aim();}
-			
-		if (get_val(Aim) || get_val(Fire)){
-			combo_run(EvilBotV4);
-            combo_run(aa_booster_combo);}
-			}
-	
-	if (HOThACKR699999999) {
-		if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))) {
-			CurRX = get_ival(aim_x);
-			CurRY = get_ival(aim_y);
+        
+        if (aimAssist_mode == 1){
+            if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))){
+                Soft_Aim();}
+                
+            if (get_val(Aim) && get_val(Fire)){
+                combo_run(EvilBotV4);
+                combo_run(aa_booster_combo);}
+                }
+                if (aimAssist_mode == 2)
+            {
+            if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))){
+                Soft_Aim();}
+                
+            if (get_val(Aim) || get_val(Fire)){
+                combo_run(EvilBotV4);
+                combo_run(aa_booster_combo);}
+                }
+        
+        if (stickyAim_on) {
+            if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))) {
+                CurRX = get_ival(aim_x);
+                CurRY = get_ival(aim_y);
 
-			if (get_ival(Aim) || (get_ival(Aim) && get_ival(Fire))) {
-				CurRX += get_polar_coordinate(NOTOROIOUS123499, sin_(TrackerAngle));
-				CurRY += get_polar_coordinate(NOTOROIOUS123499, cos_(TrackerAngle));
-			}
-			else {
-				CurRX += get_polar_coordinate(NOTOROIOUS123499, cos_(TrackerAngle));
-				CurRY += get_polar_coordinate(NOTOROIOUS123499, sin_(TrackerAngle));
-			}
+                if (get_ival(Aim) || (get_ival(Aim) && get_ival(Fire))) {
+                    CurRX += get_polar_coordinate(stickyAim_size, sin_(TrackerAngle));
+                    CurRY += get_polar_coordinate(stickyAim_size, cos_(TrackerAngle));
+                }
+                else {
+                    CurRX += get_polar_coordinate(stickyAim_size, cos_(TrackerAngle));
+                    CurRY += get_polar_coordinate(stickyAim_size, sin_(TrackerAngle));
+                }
 
-			TrackerAngle = (TrackerAngle + NOTOROIOUS877778) % 360;
-			set_val(aim_x, clamp(CurRX, -100, 100));
-			set_val(aim_y, clamp(CurRY, -100, 100));
-
-			
-		}
-	}
-    
-    // Only pertains to BUNNY_HOP
-    if (HOTHACKR111122223333) {
-        // Start looping while hip-firing (Fire held, not ADS)
-        if (get_val(Fire) && !get_val(Aim) && !combo_running(BUNNY_HOP)) {
-            combo_run(BUNNY_HOP);
+            TrackerAngle = (TrackerAngle + stickyAim_speed) % 360;
+            set_val(aim_x, clamp(CurRX, -100, 100));
+            set_val(aim_y, clamp(CurRY, -100, 100));
+            }
         }
-        // Stop immediately if Fire released, ADS, or other interrupts
-        if (!get_val(Fire) || get_val(Aim) ||
-            event_press(BTN_TACTICAL) || event_press(BTN_LETHAL) || event_press(BTN_MELEE)) {
-            combo_stop(BUNNY_HOP);
+        
+        // Only pertains to BUNNY_HOP
+        if (bunnyHop_on) {
+            // Start looping while hip-firing (Fire held, not ADS)
+            if (get_val(Fire) && !get_val(Aim) && !combo_running(BUNNY_HOP)) {
+                combo_run(BUNNY_HOP);
+            }
+            // Stop immediately if Fire released, ADS, or other interrupts
+            if (!get_val(Fire) || get_val(Aim) ||
+                event_press(BTN_TACTICAL) || event_press(BTN_LETHAL) || event_press(BTN_MELEE)) {
+                combo_stop(BUNNY_HOP);
+            }
         }
-    }
-    
-    if (HOThACKR6990000000) {
+        
+        if (killshotz_on) {
             if (PolarVIAssist) {
                 if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))) {
 
-                    if (abs(get_val(aim_x)) <= RadiuS && abs(get_val(aim_y)) <= RadiuS) {
+                    if (abs(get_val(aim_x)) <= polarAssist_radius && abs(get_val(aim_y)) <= polarAssist_radius) {
                         if (get_val(Fire)) {
                             KILLSHOTZVIAngle = PolarAngle;
                         } else {
                             KILLSHOTZVIAngle = PolarAngle;
                         }
-                        set_polar(PS, VISpeed = (VISpeed + KILLSHOTZVIAngle) % 360, (RadiuS * 328) + get_polar(PS,0));
+                        set_polar(PS, VISpeed = (VISpeed + KILLSHOTZVIAngle) % 360, (polarAssist_radius * 328) + get_polar(PS,0));
                     }
                 }
             } else {
-                if (abs(get_val(aim_x)) < RadiuS && abs(get_val(aim_y)) < RadiuS) {
+                if (abs(get_val(aim_x)) < polarAssist_radius && abs(get_val(aim_y)) < polarAssist_radius) {
                     set_val(PS, 0);
                 } else {
-                    if (get_val(aim_x) >= RadiuS) {
+                    if (get_val(aim_x) >= polarAssist_radius) {
                         set_val(PS, 45);
-                    } else if (get_val(aim_x) <= -RadiuS) {
+                    } else if (get_val(aim_x) <= -polarAssist_radius) {
                         set_val(PS, 90);
-                    } else if (get_val(aim_y) >= RadiuS) {
+                    } else if (get_val(aim_y) >= polarAssist_radius) {
                         set_val(PS, 0);
-                    } else if (get_val(aim_y) <= -RadiuS) {
+                    } else if (get_val(aim_y) <= -polarAssist_radius) {
                         set_val(PS, 90);
                     }
                 }
             }
         }
 
-    if(HOTHACKR11112266666){
-        if(get_ival(Fire) && get_ptime(Fire) >= 300)
-            combo_run(HOTHACKR11112266666); 
-        else {
-            combo_stop(HOTHACKR11112266666);		
+        if(get_ival(Fire) && get_ptime(Fire) >= 300){
+            combo_run(COMBO_PING_ENEMY);
+        } else {
+            combo_stop(COMBO_PING_ENEMY);
         }
 
-        if(HOTHACKR111122666){
+        if(sniperApnea_on){
             if(get_val(Aim))
                 set_val(Sprint, 100);
                         
             if(get_val(Aim) && get_lval(Sprint)) 
                 set_val(Sprint, 0);  
         }
-	
-    // Rapid Fire: simple ON/OFF. “ON” = In Shooting (hip or ADS while Fire is held)
-    if (HOTHACKR11117777777) {
-        if (get_ival(PS4_LEFT) && event_press(Fire)) {
-            HOTHACKER5454588 = !HOTHACKER5454588; // user’s arm/disarm hotkey remains
-            display_MOD_status(HOTHACKER5454588, sizeof(RAPIDFIRE) - 1, RAPIDFIRE[0]);
-            set_val(Fire, 0);
+        
+        // Rapid Fire: simple ON/OFF. “ON” = In Shooting (hip or ADS while Fire is held)
+        if (rapidFire_on) {
+            if (get_ival(PS4_LEFT) && event_press(Fire)) {
+                HOTHACKER5454588 = !HOTHACKER5454588; // user’s arm/disarm hotkey remains
+                display_MOD_status(HOTHACKER5454588, sizeof(RAPIDFIRE) - 1, RAPIDFIRE[0]);
+                set_val(Fire, 0);
+            }
         }
-    }
 
-    if (HOTHACKR11117777777 && HOTHACKER5454588) {
-        if (get_ival(Fire)) {
-            combo_run(EvilBot_auth_enabled);    // active whenever shooting
-        } else {
-            combo_stop(EvilBot_auth_enabled);
+        if (rapidFire_on && HOTHACKER5454588) {
+            if (get_ival(Fire)) {
+                combo_run(EvilBot_auth_enabled);    // active whenever shooting
+            } else {
+                combo_stop(EvilBot_auth_enabled);
+            }
         }
-    }
 
-    // --- SLIDE HOP: arm on crouch release after a real slide ---
-    if (event_press(Crouch)) {
-        sh_tracking = 1;
-        sh_hold_ms  = 0;
-    }
-    if (sh_tracking && get_val(Crouch)) {
-        sh_hold_ms += get_rtime();
-    }
-    if (event_release(Crouch)) {
-        sh_tracking = 0;
-        if (HOTHACKR1111222233                      // Slide Hop toggle
-            && sh_hold_ms >= SH_MIN_SLIDE_MS        // it was a slide, not a tap
-            && get_lval(Sprint)                     // still sprinting
-            && !get_val(Aim)                        // not ADS
-            && get_val(moveLY) <= FORWARD_THRESH) { // moving forward (DS4 forward is negative)
-            sh_arming = 1;
-            combo_run(SH_PRE_HOP);
-        } else {
-            sh_arming = 0;
+        // --- SLIDE HOP: arm on crouch release after a real slide ---
+        if (event_press(Crouch)) {
+            sh_tracking = 1;
+            sh_hold_ms  = 0;
         }
-    }
-    // cancel arming if conditions break before the jump fires
-    if (sh_arming) {
-        if (!get_lval(Sprint) || get_val(Aim) || get_val(Crouch)) {
-            combo_stop(SH_PRE_HOP);
-            sh_arming = 0;
+        if (sh_tracking && get_val(Crouch)) {
+            sh_hold_ms += get_rtime();
         }
-    }
+        if (event_release(Crouch)) {
+            sh_tracking = 0;
+            if (slideHop_on                      // Slide Hop toggle
+                && sh_hold_ms >= SH_MIN_SLIDE_MS        // it was a slide, not a tap
+                && get_lval(Sprint)                     // still sprinting
+                && !get_val(Aim)                        // not ADS
+                && get_val(moveLY) <= FORWARD_THRESH) { // moving forward (DS4 forward is negative)
+                sh_arming = 1;
+                combo_run(SH_PRE_HOP);
+            } else {
+                sh_arming = 0;
+            }
+        }
+        // cancel arming if conditions break before the jump fires
+        if (sh_arming) {
+            if (!get_lval(Sprint) || get_val(Aim) || get_val(Crouch)){
+                combo_stop(SH_PRE_HOP);
+                sh_arming = 0;
+            }
+        }
 
-    if(time_to_clear_screen){               
-                time_to_clear_screen -= get_rtime();
-                if(time_to_clear_screen <= 0 ){     
-                    QT_MESSAGE_TIMEOUT();     
-                }                              
-            }            
-		}
-    }
-}
+        if(time_to_clear_screen){               
+            time_to_clear_screen -= get_rtime();
+            if(time_to_clear_screen <= 0 ){     
+                QT_MESSAGE_TIMEOUT();     
+            }                              
+        }            
+    }  
+} // eof main
 
 const int16 ValRange[][] = {
-    {  1,   90 },   //  0  NOTOROIOUS112344
-    {  1,   50 },   //  1  NOTOROIOUS13435
-    {  1,  100 },   //  2  NOTOROIOUS138908
-    {  1,  100 },   //  3  NOTOROIOUS65757
-    {  1,  100 },   //  4  NOTOROIOUS89099
-    {  1,  100 },   //  5  NOTOROIOUS89777
-    {  1,   50 },   //  6  NOTOROIOUS00909
-    {  1,  100 },   //  7  NOTOROIOUS123499
-    {  1,  100 },   //  8  NOTOROIOUS877778
-    { -100, 100 },  //  9  NOTOROIOUS87711  (Vertical Recoil; allow negative/positive)
-    {  0,   10 },   // 10  NOTOROIOUS1998
-    {  0,  999 },   // 11  NOTOROIOUS20000
-    {  0,   99 },   // 12  NOTOROIOUS201009
-    {  0, 2000 },   // 13  NOTOROIOUS20787
-    {  1,  100 },   // 14  RadiuS
-    {  1,  100 },   // 15  HOThACKR1232
-    {  1,  100 },   // 16  HOThACKR129685788
-    {  1, 2000 },   // 17  HOThACKR1296857885675858
-    {  1, 1000 },   // 18  HOThACKR129685788567
-    {  1, 1000 },   // 19  HOThACKR1878787879
-    {  1,  100 }    // 20  HOThACKR187878
+    {  1,   90 },   //  0  aimSnap_resolution
+    {  1,   50 },   //  1  input_deadzone
+    {  1,  100 },   //  2  aimAssist_vmSpeed
+    {  1,  100 },   //  3  aimAssist_width
+    {  1,  100 },   //  4  aimAssist_vertical
+    {  1,  100 },   //  5  aimAssist_size
+    {  1,   50 },   //  6  aimAssist_time
+    {  1,  100 },   //  7  stickyAim_size
+    {  1,  100 },   //  8  stickyAim_speed
+    { -100, 100 },  //  9  recoil_y_compensation  (Vertical Recoil; allow negative/positive)
+    {  0,   10 },   // 10  bunnyHop_delayMultiplier
+    {  0,  999 },   // 11  bunnyHop_timing_ms
+    {  0,   99 },   // 12  aaBooster_frequency
+    {  0, 2000 },   // 13  aaBooster_delay_ms
+    {  1,  100 },   // 14  polarAssist_radius
+    {  1,  100 },   // 15  param_slot_a
+    {  1,  100 },   // 16  param_slot_b
+    {  1, 2000 },   // 17  pingCooldown_ms
+    {  1, 1000 },   // 18  rapidFire_on_ms
+    {  1, 1000 },   // 19  rapidFire_off_ms
+    {  1,  100 }    // 20  rapidFire_release_ms
 };
 
 define VM_Default = 0;
@@ -1025,9 +1083,9 @@ int HOTHACKER543232327 = TRUE;
 
 combo EvilBot_auth_enabled { 
     set_val(Fire, 100);
-    wait(random(HOThACKR129685788567, HOThACKR129685788567 * 2));
+    wait(random(rapidFire_on_ms, rapidFire_on_ms * 2));
     set_val(Fire, 0);
-    wait(random(HOThACKR1878787879, HOThACKR1878787879 * 2)); 
+    wait(random(rapidFire_off_ms, rapidFire_off_ms * 2)); 
 }
 
 function QT_MESSAGE_TIMEOUT (){     
@@ -1048,65 +1106,66 @@ NotoriouscriptzVIP_y = random(1,64);
 NotoriouscriptzVIP_y = random(1,64);}} 
 combo EvilBot_Aimbot {
     // Y (vertical) anti-recoil
-    anti_recoil_y = get_ival(aim_y) + NOTOROIOUS87711;
+    anti_recoil_y = get_ival(aim_y) + recoil_y_compensation;
     if (anti_recoil_y > 100) anti_recoil_y = 100;
     if (anti_recoil_y < -100) anti_recoil_y = -100;
     set_val(aim_y, anti_recoil_y);
 }
+
 combo EvilBotV4 {
-    offset_sticky_aa(PS4_LX,NOTOROIOUS89777 * 10);
-    wait(NOTOROIOUS00909  * 10);
-    offset_sticky_aa(PS4_LX,inv(NOTOROIOUS89777 * 10));
-    wait(NOTOROIOUS00909  * 10);
-    }
+    offset_sticky_aa(moveLX, aimAssist_size * 10);
+    wait(aimAssist_time * 10);
+    offset_sticky_aa(moveLX, inv(aimAssist_size * 10));
+    wait(aimAssist_time * 10);
+}
 combo aa_booster_combo{
-    X = random(inv(NOTOROIOUS89777), NOTOROIOUS89777);
-    offset_sticky_aa(PS4_LX, 27);
-    offset_sticky_aa(PS4_LY, X);
-    wait(NOTOROIOUS00909 * 10);
-    offset_sticky_aa(PS4_LX, inv(25));
-    offset_sticky_aa(PS4_LY, X);
-    wait(NOTOROIOUS00909 * 8);
-    offset_sticky_aa(PS4_LY, X);
-    offset_sticky_aa(PS4_LX, 25);
-    wait(NOTOROIOUS00909 * 10);
-    offset_sticky_aa(PS4_LX, inv(27));
-    offset_sticky_aa(PS4_LY, X);
-    wait(NOTOROIOUS00909 * 8);
-    }
+    X = random(inv(aimAssist_size), aimAssist_size);
+    offset_sticky_aa(moveLX, 27);
+    offset_sticky_aa(moveLY, X);
+    wait(aimAssist_time * 10);
+    offset_sticky_aa(moveLX, inv(25));
+    offset_sticky_aa(moveLY, X);
+    wait(aimAssist_time * 8);
+    offset_sticky_aa(moveLY, X);
+    offset_sticky_aa(moveLX, 25);
+    wait(aimAssist_time * 10);
+    offset_sticky_aa(moveLX, inv(27));
+    offset_sticky_aa(moveLY, X);
+    wait(aimAssist_time * 8);
+}
 
 combo BUNNY_HOP {
     // optional wind-up
-    wait(NOTOROIOUS1998 * 250);
+    wait(bunnyHop_delayMultiplier * 250);
 
     // crouch tap
     set_val(Crouch, 100);
-    wait(NOTOROIOUS20000);
+    wait(bunnyHop_timing_ms);
     set_val(Crouch, 0);
-    wait(NOTOROIOUS20000);
+    wait(bunnyHop_timing_ms);
 
     // single jump
     // set_val(BTN_JUMP, 100);
-    // wait(NOTOROIOUS20000 / 2);
+    // wait(bunnyHop_timing_ms / 2);
     // set_val(BTN_JUMP, 0);
 
     // double jump
     set_val(BTN_JUMP, 100);
-    wait(NOTOROIOUS20000 / 2);
+    wait(bunnyHop_timing_ms / 2);
     set_val(BTN_JUMP, 0);
-    wait(NOTOROIOUS20000 / 3);
+    wait(bunnyHop_timing_ms / 3);
     set_val(BTN_JUMP, 100);
-    wait(NOTOROIOUS20000 / 2);
+    wait(bunnyHop_timing_ms / 2);
     set_val(BTN_JUMP, 0);
 
     // small cooldown between jumps
-    wait(NOTOROIOUS20000);
+    wait(bunnyHop_timing_ms);
 
     // loop again; main() will stop it when conditions fail
     combo_restart(BUNNY_HOP);
 }
 
-combo HOTHACKR11112266666 {
+combo COMBO_PING_ENEMY {
     set_val(Ping,100);
     wait(20);
     set_val(Ping,0);
@@ -1114,7 +1173,7 @@ combo HOTHACKR11112266666 {
     set_val(Ping,100);
     wait(20);
     set_val(Ping,0); 
-    wait(HOThACKR1296857885675858); 
+    wait(pingCooldown_ms); 
 }
 
 // ======= SLIDE HOP (jump exactly when slide ends) =======
@@ -1219,7 +1278,7 @@ function Soft_Aim() {
     ly_aim = get_ival(aim_y);
     input_mag = isqrt((lx_aim * lx_aim) + (ly_aim * ly_aim));
     
-    if (input_mag < NOTOROIOUS13435) {
+    if (input_mag < input_deadzone) {
         lx_aim = 0;
         ly_aim = 0;
     }
@@ -1228,10 +1287,10 @@ function Soft_Aim() {
         first_aim = 1;
         aim_speed = atan2_16bits(ly_aim, lx_aim);
     } else {
-        aim_speed = (aim_speed + NOTOROIOUS138908) % 360;
+        aim_speed = (aim_speed + aimAssist_vmSpeed) % 360;
     }
     
-    aim_width = NOTOROIOUS65757; 
+    aim_width = aimAssist_width; 
     
     if (aim_width > 32) {
         aim_width = 32;
@@ -1367,14 +1426,11 @@ const int16 Hacked[] = {
 };
 
 function RemoveStickNoise() {
-    if(isqrt(pow(abs(get_ival(PS4_LX)),2) + pow(abs(get_ival(PS4_LY)),2)) <= NOTOROIOUS13435) {
-        set_val(PS4_LX,0);
-        set_val(PS4_LY,0);
+    if(isqrt(pow(abs(get_ival(moveLX)),2) + pow(abs(get_ival(moveLY)),2)) <= input_deadzone) {
+        set_val(moveLX,0); set_val(moveLY,0);
     }
-
-    if(isqrt(pow(abs(get_ival(PS4_RX)),2) + pow(abs(get_ival(PS4_RY)),2)) <= NOTOROIOUS13435) {
-        set_val(PS4_RX,0);
-        set_val(PS4_RY,0);
+    if(isqrt(pow(abs(get_ival(aim_x)),2) + pow(abs(get_ival(aim_y)),2)) <= input_deadzone) {
+        set_val(aim_x,0); set_val(aim_y,0);
     }
 }
 
@@ -1392,40 +1448,40 @@ const string EXIT_TXT2 = "";
 
 function save_toggles () {                    
     set_pvar(SPVAR_1,1);                        // AIM SNAP locked ON 
-    set_pvar(SPVAR_2,HOThACKR666656);
-    set_pvar(SPVAR_3,HOThACKR6999999999);
-    set_pvar(SPVAR_5,HOThACKR66665609);
-    set_pvar(SPVAR_16,HOTHACKR111122223333);
+    set_pvar(SPVAR_2,stickNoiseFilter_on);
+    set_pvar(SPVAR_3,aimAssist_mode);
+    set_pvar(SPVAR_5,recoilControl_on);
+    set_pvar(SPVAR_16,bunnyHop_on);
     set_pvar(SPVAR_19,0);
     set_pvar(SPVAR_26, 1);                      // always persist ON
     set_pvar(SPVAR_29,0);                      // always persist OFF
-    set_pvar(SPVAR_31,HOTHACKR111122666);
-    set_pvar(SPVAR_32,HOTHACKR11117777777);
-    set_pvar(SPVAR_35,HOTHACKR111177);
+    set_pvar(SPVAR_31,sniperApnea_on);
+    set_pvar(SPVAR_32,rapidFire_on);
+    set_pvar(SPVAR_35,rapidFire_speedProfile);
     set_pvar(SPVAR_6,3);                        // AIM SNAP step locked to 3 
-    set_pvar(SPVAR_7,NOTOROIOUS13435);
-    set_pvar(SPVAR_8,NOTOROIOUS138908);
-    set_pvar(SPVAR_9,NOTOROIOUS65757);
-    set_pvar(SPVAR_10,NOTOROIOUS89099);
-    set_pvar(SPVAR_11,NOTOROIOUS89777);
-    set_pvar(SPVAR_12,NOTOROIOUS00909);
-    set_pvar(SPVAR_15,NOTOROIOUS87711);
-    set_pvar(SPVAR_17,NOTOROIOUS1998);
-    set_pvar(SPVAR_18,NOTOROIOUS20000);
-    set_pvar(SPVAR_20,NOTOROIOUS201009);
-    set_pvar(SPVAR_21,NOTOROIOUS20787);
-    set_pvar(SPVAR_23,HOTKEY19);
-    set_pvar(SPVAR_24,HOThACKR1232);
-    set_pvar(SPVAR_25,HOThACKR129685788);
-    set_pvar(SPVAR_27,RadiuS);
-    set_pvar(SPVAR_30,HOThACKR1296857885675858);
-    set_pvar(SPVAR_33,HOThACKR129685788567); 
+    set_pvar(SPVAR_7,input_deadzone);
+    set_pvar(SPVAR_8,aimAssist_vmSpeed);
+    set_pvar(SPVAR_9,aimAssist_width);
+    set_pvar(SPVAR_10,aimAssist_vertical);
+    set_pvar(SPVAR_11,aimAssist_size);
+    set_pvar(SPVAR_12,aimAssist_time);
+    set_pvar(SPVAR_15,recoil_y_compensation);
+    set_pvar(SPVAR_17,bunnyHop_delayMultiplier);
+    set_pvar(SPVAR_18,bunnyHop_timing_ms);
+    set_pvar(SPVAR_20,aaBooster_frequency);
+    set_pvar(SPVAR_21,aaBooster_delay_ms);
+    set_pvar(SPVAR_23,userHotkeyCode);
+    set_pvar(SPVAR_24,param_slot_a);
+    set_pvar(SPVAR_25,param_slot_b);
+    set_pvar(SPVAR_27,polarAssist_radius);
+    set_pvar(SPVAR_30,pingCooldown_ms);
+    set_pvar(SPVAR_33,rapidFire_on_ms); 
     set_pvar(SPVAR_34,7);                       // RAPID FIRE: VM speed locked to 7
     set_pvar(SPVAR_37, 22);                     // RAPID FIRE: Delay locked to 22ms
-    // set_pvar(SPVAR_29, HOTHACKR1111222233);             // persist SLIDE HOP ON/OFF
+    // set_pvar(SPVAR_29, slideHop_on);             // persist SLIDE HOP ON/OFF
     // TRACKERMOD: persist toggle; if ON also persist preset
-    set_pvar(SPVAR_4, HOThACKR699999999);
-    if (HOThACKR699999999) {
+    set_pvar(SPVAR_4, stickyAim_on);
+    if (stickyAim_on) {
         set_pvar(SPVAR_13, 18);
         set_pvar(SPVAR_14, 90);
     }
@@ -1454,14 +1510,14 @@ function HOTHACKER54545(  f_val) {
         
 function f_go_forward (f_variable) {
     f_variable       +=1;   
-    if(f_variable  > Min_Max_Options[HOThACKR6666560999][1] )f_variable  = Min_Max_Options[HOThACKR6666560999][0]; 
+    if(f_variable  > Min_Max_Options[menuPage_idx][1] )f_variable  = Min_Max_Options[menuPage_idx][0]; 
 
     return f_variable;
 }
 
 function f_go_back (f_variable) {
     f_variable       -=1;   
-    if(f_variable  < Min_Max_Options[HOThACKR6666560999][0] )f_variable  = Min_Max_Options[HOThACKR6666560999][1]; 
+    if(f_variable  < Min_Max_Options[menuPage_idx][0] )f_variable  = Min_Max_Options[menuPage_idx][1]; 
     return f_variable;
 }
 
@@ -1595,19 +1651,26 @@ const string ModOption_50_3 = "4 ms";
 const string ModOption_50_4 = "2 ms"; 
 const string ModOption_50_5 = "1 ms";
 
-define UP_arrow = 131; define DOWN_arrow = 132; define LEFT_arrow = 133; define RIGHT_arrow = 134; define TRIANGLE_txt = 130; define Y_txt = 89; define CROSS_txt = 127; define A_txt = 65;
-define SINGLE     = 21;
-define ROW_1      = 21;
-define ROW_2      = 33;
-const string MOD_LABEL        ="";
-const string SLOT_LABEL       ="";
+define UP_arrow         = 131; 
+define DOWN_arrow       = 132; 
+define LEFT_arrow       = 133; 
+define RIGHT_arrow      = 134; 
+define TRIANGLE_txt     = 130; 
+define Y_txt            = 89; 
+define CROSS_txt        = 127; 
+define A_txt            = 65;
+define SINGLE           = 21;
+define ROW_1            = 21;
+define ROW_2            = 33;
+const string MOD_LABEL  ="";
+const string SLOT_LABEL ="";
 int slot_numb;
 
 function display_mod(f_string, mod_name, f_toggle, f_option) {   
     print(f_string, 2, OLED_FONT_SMALL, OLED_WHITE, mod_name);  // was OLED_BLACK
         
     print(2, 38, OLED_FONT_SMALL, OLED_WHITE, MOD_LABEL[0]);     // was OLED_BLACK
-    print_number(HOThACKR6666560999 + 1, find_digits(HOThACKR6666560999 + 1), 28, 255, OLED_FONT_LARGE);
+    print_number(menuPage_idx + 1, find_digits(menuPage_idx + 1), 28, 255, OLED_FONT_LARGE);
 
     print(84, 38, OLED_FONT_SMALL, OLED_WHITE, SLOT_LABEL[0]);   // was OLED_BLACK
     print_number(slot_numb, find_digits(slot_numb), 255, 1, OLED_FONT_LARGE); 
@@ -1676,22 +1739,13 @@ function display_mod(f_string, mod_name, f_toggle, f_option) {
     }
 }
 
-const uint8 MenuButtons [] = {  
-PS4_RIGHT , 
-PS4_LEFT , 
-PS4_UP , 
-PS4_DOWN , 
-PS4_CROSS , 
-PS4_CIRCLE , 
-PS4_OPTIONS , 
-PS4_L2     
-}; 
+int MenuButtons[8];
 
 int menu_btn_indx;
 int MenuTimeOut;
 define menu_time_active = 30000;
 function CheckIfBtnIsPressed (){  
-    for(menu_btn_indx = 0; menu_btn_indx < 7; menu_btn_indx++){
+    for(menu_btn_indx = 0; menu_btn_indx < 8; menu_btn_indx++){
         if(event_press(MenuButtons[menu_btn_indx]) ){
             MenuTimeOut = menu_time_active;
         }
