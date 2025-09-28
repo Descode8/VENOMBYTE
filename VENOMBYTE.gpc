@@ -38,10 +38,22 @@ Description: Adds micro-movements when firing inside a close radius to increase 
 
 SLIDE HOP (if you enable it)
 Description: Triggers a jump right as a slide ends, letting you chain slides into hops for faster evasive movement.
+
+RUN COMBO (if you enable it)
+Description: While moving fully forward (LS ≈ 100) and not pressing RT/LT, auto-cycles run 2s → slide → hop → repeat for continuous evasive movement.
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//----- CROSS-PLATFORM INPUT LAYER -----
+/* 
+////////////// CROSS-PLATFORM INPUT ALIASES AND BUTTONS ////////////////////////
+PURPOSE:
+    DECLARE GENERIC INPUT VARIABLES (TRIGGERS, STICKS, DPAD, ACTION BUTTONS).
+WHY:
+    YOUR SCRIPT MAPS BUTTONS DYNAMICALLY (PS/XBOX) IN setup_controls(); THESE
+    ALIASES LET EVERYTHING ELSE USE A SINGLE, CONSISTENT SET OF NAMES.
+SIDE EFFECTS:
+    NONE HERE—ONLY DECLARATIONS; VALUES ARE ASSIGNED IN setup_controls().
+*/
 int Fire, Aim, Sprint;
 int aim_x, aim_y;
 int BTN_MELEE, BTN_TACTICAL, BTN_LETHAL;
@@ -52,11 +64,27 @@ int BTN_R3;
 int moveLX, moveLY;
 int Ping;
 
-// Polar aliases are platform-agnostic; keep as defines
+/* 
+////////////// POLAR STICK ALIASES (PLATFORM-AGNOSTIC) /////////////////////////
+PURPOSE:
+    POLAR COORDINATE ACCESSORS FOR THE RIGHT STICK (MAGNITUDE+ANGLE).
+WHY:
+    SOME MODS (KILLSHOTZ/POLAR ASSIST) OPERATE BETTER IN POLAR SPACE.
+*/
 define PS = POLAR_RS;
 define PX = POLAR_RX;
 define PY = POLAR_RY;
+define KEEP_BRAND = 1;
 
+/* 
+////////////// ADJUSTABLE VARIABLES: RUNTIME-TUNED PARAMETERS ///////////////////
+PURPOSE:
+    HOLDS ALL USER-TUNABLE PARAMETERS (AA SPEED/WIDTH, RECOIL, BUNNY HOP TIMING).
+EDITOR:
+    THESE VALUES ARE SURFACED IN THE OLED EDITOR UI; BOUNDS IN ValRange[][].
+PERSISTENCE:
+    MOST ARE SAVED/LOADED VIA SPVAR IN init() AND save_toggles().
+*/
 int adjust_variable_idx;                  
 int aimSnap_resolution; 
 int input_deadzone;
@@ -81,22 +109,40 @@ int rapidFire_on_ms;
 int rapidFire_off_ms; 
 int rapidFire_release_ms;    
 
+/* 
+////////////// MENU & FEATURE INDICES (PAGES / ROUTING) ////////////////////////
+PURPOSE:
+    CONSTANTS THAT MAP "MENU PAGE" → FEATURE. CONTROLS NAVIGATION & RENDERING.
+NOTES:
+    ABOUT_IDX DEFINES A READ-ONLY PAGE. MAX_MODS_COUNT ADDS WRAP-AROUND SPACE.
+*/
 define EDIT_COUNT               = 21;                   
 define AMOUNT_OF_VALNAME_IDX    = 22; 
-define MAX_MODS_COUNT           = 15;     // add one extra page at the end
+define MAX_MODS_COUNT           = 15;     
 define ABOUT_IDX                = 15;          // new About page index      
-
 define IDX_RECOIL_CONTROL       = 0;
 define IDX_AIM_SNAP             = 1;
 define IDX_AIM_ASSIST           = 3;
 define IDX_STICKY_AIM           = 4;
 define IDX_BUNNY_HOP            = 8;
+define IDX_RUN_COMBO            = 9;
 define IDX_PING_ENEMY           = 10;
 define IDX_HOLD_BREATH          = 11;
 define IDX_RAPIDFIRE            = 12;
 define IDX_VMSPEED              = 13;
 define IDX_SLIDE_HOP            = 14;
+define On                       = 1;
+define Off                      = 0;
 
+/* 
+////////////// TOGGLE STATES AND MENU NAVIGATION ///////////////////////////////
+PURPOSE:
+    RUNTIME TOGGLES (ON/OFF) FOR EACH MOD + CURRENT MENU PAGE STATE.
+USAGE:
+    MUTATED BY set_option_value(), UI EVENTS, AND INIT DEFAULTS.
+PERSISTENCE:
+    MOST ARE SYNCED TO SPVAR SO THEY SURVIVE REBOOTS.
+*/
 int menuPage_idx;  
 int recoilControl_on; 
 int aimSnap_enabled;  
@@ -105,6 +151,7 @@ int aimAssist_mode;
 int stickyAim_on; 
 int killshotz_on;
 int bunnyHop_on;
+int runCombo_on; 
 int slideHop_on;
 int pingEnemy_on;
 int sniperApnea_on;
@@ -113,10 +160,18 @@ int rapidFire_speedProfile;
 int edit_tmp_val, tmp_val;
 int int_controller, out_console;
 
-const string EvilBot_AimbotMOD  = "RECOIL CONTROL" ;
-const string aimAssist_modeMOD  = "AIM ASSIST" ;
+/* 
+////////////// UI STRINGS: MOD NAMES / LABELS / PRODUCT INFO ///////////////////
+PURPOSE:
+    USER-FACING NAMES SHOWN ON THE OLED. KEEP SHORT TO AVOID WRAP.
+NOTES:
+    CHANGING TEXT ONLY UPDATES UI—LOGIC KEYS (INDICES/TOGGLES) LIVE ELSEWHERE.
+*/
+const string RECOIL_CONTROL     = "RECOIL CONTROL" ;
+const string AIM_ASSIST         = "AIM ASSIST" ;
 const string TRACKERMOD         = "STICKY AIM" ; 
 const string BUNNY_HOP		    = "BUNNY HOP" ;
+const string RUN_COMBO          = "RUN COMBO" ;
 const string PING			    = "PING ENEMY" ;
 const string HOLD			    = "SNIPER APNEA" ;
 const string RAPIDFIRE          = "RAPID FIRE" ;
@@ -134,28 +189,51 @@ const string STR_PRODUCT_NAME   = "VENOMBYTE";
 const string STR_PRODUCT_VER    = "v1.0";
 
 
+/* 
+////////////// OPTIONS TABLE: PAGE → OPTION FAMILY (1/31/50/…) //////////////////
+PURPOSE:
+    CONTROLS WHAT TYPE OF VALUE THE PAGE DISPLAYS:
+        1  = SIMPLE ON/OFF
+        31 = SHOT MODE SELECTOR (OFF/SINGLE/AIM+SHOT/JUST POINTED/IN SHOOTING)
+        50 = VM SPEED PRESETS (DEFAULT/8MS/…)
+IMPACT:
+    display_mod() USES THIS TO CHOOSE WHICH TEXT/CHOICES TO RENDER.
+*/
 const uint8 Options [] = {
-  1,  // 0 RECOIL CONTROL
-  1,  // 1 AIM SNAP
-  1,  // 2
-  31, // 3 AIM ASSIST (ShotModOptions)
-  1,  // 4 TRACKERMOD
-  1,  // 5 KILLSHOTZ
-  69, // 6
-  1,  // 7 HEADSHOT
-  1,  // 8 BUNNY HOP
-  1,  // 9
-  1,  // 10 PING
-  1,  // 11 HOLD
-  1,  // 12 RAPIDFIRE (ON/OFF)
-  50, // 13 VMSPEED
-  1,  // 14
-  0   // 15 ABOUT page (no options)
+    1,  // 0 RECOIL CONTROL
+    1,  // 1 AIM SNAP
+    1,  // 2
+    31, // 3 AIM ASSIST (ShotModOptions)
+    1,  // 4 TRACKERMOD
+    1,  // 5 KILLSHOTZ
+    69, // 6
+    1,  // 7 HEADSHOT
+    1,  // 8 BUNNY HOP
+    1,  // 9 RUN COMBO
+    1,  // 10 PING
+    1,  // 11 HOLD
+    1,  // 12 RAPIDFIRE (ON/OFF)
+    50, // 13 VMSPEED
+    1,  // 14
+    0   // 15 ABOUT page (no options)
 };
 
-// 1=editable; 0=not editable
+/* 
+////////////// EDITABILITY TABLE: PAGE → (1=EDITABLE, 0=READ-ONLY) //////////////
+PURPOSE:
+    FLAGS WHICH PAGES OPEN THE NUMERIC EDITOR (ARROWS, MIN/MAX).
+USAGE:
+    WHEN 0, THE PAGE SHOWS STATUS ONLY (E.G., ABOUT PAGE).
+*/
 const uint8 EditVal [] = { 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+/* 
+////////////// INDEX RANGE PER PAGE FOR THE VALUE EDITOR ////////////////////////
+PURPOSE:
+    BOUNDS FOR adjust_variable_idx WITHIN EACH PAGE (FIRST..LAST EDITABLE FIELD).
+WHY:
+    PREVENTS EDITOR FROM SELECTING FIELDS NOT MEANT FOR THAT PAGE.
+*/
 const uint8 OptRange [][] = {
     { 9, 9 },  // 0
     { 0, 0 },  // 1
@@ -174,6 +252,14 @@ const uint8 OptRange [][] = {
     { 0, 0 },  // 14
     { 0, 0 }   // 15 ABOUT (no editor)
 };
+
+/* 
+////////////// MIN/MAX OPTION CYCLING LIMITS PER PAGE ///////////////////////////
+PURPOSE:
+    LEFT/RIGHT OPTION RANGES FOR EACH PAGE (E.G., 0..1 FOR ON/OFF).
+USAGE:
+    f_go_forward()/f_go_back() WRAP WITHIN THESE LIMITS.
+*/
 const uint8 Min_Max_Options [][] = {
     {0,1}, // 0
     {0,1}, // 1
@@ -193,6 +279,13 @@ const uint8 Min_Max_Options [][] = {
     {0,0}  // 15 ABOUT (no options)
 };
 
+/* 
+////////////// EDITOR LABEL STRINGS FOR EACH EDITABLE VALUE /////////////////////
+PURPOSE:
+    OLED LABELS FOR THE CURRENTLY ACTIVE EDIT FIELD (E.G., "VM SPEED", "TIME").
+UX:
+    SHOWN BY HOTHACKER54545() AT THE TOP OF THE EDITOR SCREEN.
+*/
 const string EditVarStr []={
     "Evilbot AIM.A", 
     "Evilbot2233",  
@@ -217,17 +310,34 @@ const string EditVarStr []={
     "FR Release"  
 };
 
-// -------------------- TOP-LEVEL DEFINES / CONSTS --------------------
+
+/* 
+////////////// GLOBAL SCREEN / TIMEOUT CONSTANTS ////////////////////////////////
+PURPOSE:
+    UI TIMEOUTS & SLEEP SETTINGS (MS). CONTROLS SAVER AND AUTO-CLEAR.
+*/
 define Screen_Sleep_Time = 5000;
 define TimeoutLimit      = 30000;
 
-// If you only use two strings, keep two; update indexes accordingly in prints
+/* 
+////////////// MISC UI STRINGS FOR SAVER / BRANDING /////////////////////////////
+PURPOSE:
+    SHORT TEXTS SHOWN BY THE SCREENSAVER (PRODUCT NAME / VERSION).
+*/
 const string MiscString[] = {
     "VERSION 1.0",
     "VENOMBYTE"
 };
 
-// ---STICKY AIM lock helper: keep it ON and hidden at Size=18, Speed=90
+/* 
+////////////// STICKY AIM: FORCE PRESET ON (LOCK + PERSIST) /////////////////////
+PURPOSE:
+    GUARANTEE STICKY AIM IS ENABLED AT A KNOWN GOOD PRESET (SIZE=18, SPEED=90).
+PERSISTENCE:
+    WRITES SPVAR_4/13/14 SO THE PRESET SURVIVES POWER CYCLES.
+SIDE EFFECTS:
+    OVERRIDES CURRENT STICKY SETTINGS WHEN CALLED.
+*/
 function trackermod_lock_on() {
     stickyAim_on = 1;   //STICKY AIM ON
     stickyAim_size  = 18;  // Size
@@ -239,7 +349,12 @@ function trackermod_lock_on() {
     set_pvar(SPVAR_14, 90);  // Speed
 }
 
-// ---STICKY AIM helper: toggle + enforce preset when ON
+/* 
+////////////// STICKY AIM: APPLY/REMOVE PRESET AND PERSIST //////////////////////
+PURPOSE:
+    TURN STICKY AIM ON/OFF. WHEN ENABLING, ENFORCE KNOWN PRESET; WHEN DISABLING,
+    LEAVE SIZE/SPEED VALUES UNTOUCHED BUT SAVE THE TOGGLE STATE.
+*/
 function trackermod_apply(int on) {
     if (on) {
         stickyAim_on = 1;   // ON
@@ -255,13 +370,26 @@ function trackermod_apply(int on) {
     }
 }
 
-// --- KILLSHOTZ helper: force ON and persist
+/* 
+////////////// KILLSHOTZ: FORCE ON AND PERSIST //////////////////////////////////
+PURPOSE:
+    KEEP KILLSHOTZ ALWAYS ENABLED, EVEN IF USER TRIES TO DISABLE IT.
+WHEN:
+    CALLED DURING INIT AND WHEN OPTION CHANGES TO RE-ASSERT STATE.
+*/
 function killshotz_force_on() {
     killshotz_on = 1;      // ON
     set_pvar(SPVAR_26, 1);       // persist ON
 }
 
-// Detect and map controls to the active output console
+/* 
+////////////// CONTROLLER/CONSOLE DETECTION AND BUTTON MAPPING //////////////////
+PURPOSE:
+    RUNTIME DETECTION OF OUTPUT CONSOLE & INPUT PAD; MAPS GENERIC ALIASES
+    (Fire/Aim/etc.) TO THE CORRECT PLATFORM BUTTONS (PS/XBOX).
+IMPACT:
+    MAKES THE REST OF THE SCRIPT PLATFORM-AGNOSTIC.
+*/
 function setup_controls() {
     out_console = get_console();        // What Zen is plugged into -> OUTPUT: PIO_PS4 / PIO_PS5 / PIO_XB1 / etc.
     int_controller = get_controller();  // What is plugged into Zen ->INPUT: physical pad type (optional)
@@ -319,6 +447,14 @@ function setup_controls() {
     MenuButtons[7] = Aim;
 }
 
+/* 
+////////////// INIT: LOAD DEFAULTS/PVARS, PRECOMPUTE, CLEAR OLED ///////////////
+PURPOSE:
+    SET INITIAL TOGGLES, LOAD PERSISTED VALUES (SPVAR), CALCULATE DERIVEDS,
+    CLEAR THE OLED, AND READY ALL MODS FOR MAIN().
+ORDER MATTERS:
+    SET ALL PDEPENDENCIES (E.G., AIM ASSIST MODE) BEFORE COMPUTING DERIVATIVES.
+*/
 init {
     setup_controls();   // call this for cross-platform support
     // ================= AIM / ASSIST DEFAULTS =================
@@ -329,23 +465,24 @@ init {
     
     // ================= MOVEMENT MODS =================
     slideHop_on                 = 0;                          // SLIDE HOP default OFF
-    trackermod_lock_on();                                  // STICKY AIM lock ON at preset (Size=18, Speed=90)
+    trackermod_lock_on();                                     // STICKY AIM lock ON at preset (Size=18, Speed=90)
     recoilControl_on            = 1;                          // RECOIL CONTROL default ON
     bunnyHop_on                 = 1;                          // BUNNY_HOP default ON
+    runCombo_on                 = get_pvar(SPVAR_38, 0, 1, 1);                          // RUN COMBO default ON
 
     // ================= OTHER CORE MODS =================
     killshotz_on                = get_pvar(SPVAR_26, 0, 1, 1); // KILLSHOTZ default ON
-    killshotz_force_on();                                  // Ensure KILLSHOTZ is always ON/persisted
+    killshotz_force_on();                                     // Ensure KILLSHOTZ is always ON/persisted
     pingEnemy_on                = 1;                          // PING ENEMY default ON
     sniperApnea_on              = 1;                          // HOLD BREATH (SNIPER APNEA) default ON
-    rapidFire_on                = 1;                          // RAPIDFIRE default ON
+    rapidFire_on                = 0;                          // RAPIDFIRE default ON
     rapidFire_speedProfile      = get_pvar(SPVAR_35, 1, 5, 0); // RAPIDFIRE speed profile
 
     // ================= AIM SNAP SETTINGS =================
     aimSnap_resolution          = 3;                          // AIM SNAP FOV (default 3)
     input_deadzone              = 11;                         // Deadzone threshold
     aimAssist_vmSpeed           = 23;                         // AIM ASSIST VM Speed (default 50)
-    aimAssist_width             = 7;                         // AIM ASSIST Width Shape
+    aimAssist_width             = 7;                          // AIM ASSIST Width Shape
     aimAssist_vertical          = 5; // Vertical adjustment
     aimAssist_size              = 4; // Size
     aimAssist_time              = 8; // Time
@@ -370,8 +507,8 @@ init {
     // ================= TIMINGS (RAPID FIRE) =================
     pingCooldown_ms             = get_pvar(SPVAR_30, 1, 2000, 1000); // Ping cooldown
     rapidFire_on_ms             = get_pvar(SPVAR_33, 1, 1000, 4);    // AA random offset
-    rapidFire_off_ms            = 7;                               // RAPID FIRE speed (ms between shots)
-    rapidFire_release_ms        = 22;                              // RAPID FIRE release (ms)
+    rapidFire_off_ms            = get_pvar(SPVAR_34, 1, 1000, 7);    // RAPID FIRE speed (ms between shots)
+    rapidFire_release_ms        = get_pvar(SPVAR_37, 1, 100,  22);   // RAPID FIRE release (ms)
     
     // ================= GENERAL =================
     slot_numb = get_slot();                                     // Current slot number on Zen device
@@ -383,14 +520,42 @@ init {
     cls_oled(0);
 }
 
-define On = 1;
-define Off = 0;
-int SaverOn = TRUE,Timer,NotoriouscriptzVIP_x,NotoriouscriptzVIP_y,NotoriouscriptzVIP_t,NotoriouscriptzVIP_c = 1,X,CurRX,CurRY,CurrentRX,CurrentRY,ReT,anti_recoil_y,lx_aim,ly_aim,input_mag,first_aim,aim_speed,aim_width,active_aiming_counter,active_aiming,_angle,toggle_active_aiming = 1,TrackerAngle = 270;
-define killshotz_on_Polar = 0, killshotz_on_Reducer = 1, PolarValue = 32767, PolarVIAssist = 1,TimeToShowIntroPicture = 30000;
-int KILLSHOTZVIAngle, VISpeed, PolarAngle = 30; // balanced default
+/* 
+////////////// GLOBALS: LED FADE / MATH / AIM STATE / TRACKER ANGLE ////////////
+PURPOSE:
+    SHARED STATE FOR ANIMATIONS, AA MOTION, ANGLES, AND COUNTERS.
+NOTE:
+    active_aiming/COUNTER + toggle_active_aiming DRIVE PATTERN FLIPS IN Soft_Aim().
+*/
+int SaverOn = TRUE;
+int Timer;
+int NotoriouscriptzVIP_x, NotoriouscriptzVIP_y;
+int NotoriouscriptzVIP_t;
+int NotoriouscriptzVIP_c = 1;
+int X;
+int CurRX, CurRY;
+int CurrentRX, CurrentRY;
+int ReT;
+int anti_recoil_y;
+int lx_aim, ly_aim;
+int input_mag;
+int first_aim;
+int aim_speed, aim_width;
+int active_aiming_counter, active_aiming;
+int _angle;
+int toggle_active_aiming = 1;
+int TrackerAngle = 270;
 
+
+define killshotz_on_Polar = 0;
+int killshotz_on_Reducer = 1;
+int PolarValue = 32767;
+int PolarVIAssist = 1;
+int TimeToShowIntroPicture = 30000;
+int KILLSHOTZVIAngle;
+int VISpeed;
+int PolarAngle = 30; // balanced default
 int display_black,count_black;
-
 int CountLED;
 int RED1;
 int BLUE1;
@@ -399,7 +564,13 @@ int RED=1;
 int GREEN=1;
 int BLUE=1;
 
-// --- map edit index -> variable (READ)
+/* 
+////////////// EDITOR: READ CURRENT VALUE BY INDEX //////////////////////////////
+PURPOSE:
+    MAPS adjust_variable_idx → THE ACTUAL VARIABLE VALUE TO DISPLAY/EDIT.
+RETURNS:
+    INTEGER IN CURRENT UNITS, BOUNDED LATER BY ValRange[][] IN edit_val().
+*/
 function get_edit_value(int ix) {
     if (ix == 0)  return aimSnap_resolution;
     if (ix == 1)  return input_deadzone;
@@ -425,7 +596,13 @@ function get_edit_value(int ix) {
     return 0;
 }
 
-// --- map edit index -> variable (WRITE)
+/* 
+////////////// EDITOR: WRITE NEW VALUE BY INDEX /////////////////////////////////
+PURPOSE:
+    MAPS adjust_variable_idx → ASSIGN THE USER-EDITED VALUE BACK TO STORAGE.
+VALIDATION:
+    CALLER ENSURES BOUNDS VIA edit_val() BEFORE THIS WRITE.
+*/
 function set_edit_value(int ix, int v) {
     if (ix == 0)  { aimSnap_resolution            = v; return; }
     if (ix == 1)  { input_deadzone             = v; return; }
@@ -450,6 +627,13 @@ function set_edit_value(int ix, int v) {
     if (ix == 20) { rapidFire_release_ms              = v; return; }
 }
 
+/* 
+////////////// READ CURRENT OPTION/TOGGLE FOR ACTIVE PAGE ///////////////////////
+PURPOSE:
+    PROVIDE CURRENT TOGGLE/OPTION VALUE FOR display_mod().
+SPECIAL:
+    AIM ASSIST PAGE EXPOSES "ON" ONLY WHEN INTERNAL MODE == AIM+SHOT (2).
+*/
 function get_option_value(int ix) {
     if (ix == IDX_RECOIL_CONTROL) return recoilControl_on;
     if (ix == IDX_AIM_SNAP)       return aimSnap_enabled;
@@ -464,6 +648,7 @@ function get_option_value(int ix) {
     if (ix == IDX_STICKY_AIM)     return stickyAim_on;
     if (ix == 5)                  return killshotz_on; // KILLSHOTZ (kept)
     if (ix == IDX_BUNNY_HOP)      return bunnyHop_on;
+    if (ix == IDX_RUN_COMBO)      return runCombo_on;
     if (ix == IDX_PING_ENEMY)     return pingEnemy_on;
     if (ix == IDX_HOLD_BREATH)    return sniperApnea_on;
     if (ix == IDX_RAPIDFIRE)      return rapidFire_on;
@@ -472,47 +657,61 @@ function get_option_value(int ix) {
     return 0;
 }
 
+/* 
+////////////// APPLY OPTION/TOGGLE CHANGE FOR ACTIVE PAGE //////////////////////
+PURPOSE:
+    HANDLE SIDE-EFFECTS WHEN AN OPTION CHANGES (E.G., PERSIST, PRESET ENFORCE).
+EFFECTS:
+    SOME OPTIONS CALL HELPERS (trackermod_lock_on, aim_assist_set_onoff, ETC.).
+*/
 function set_option_value(int ix, int v) {
     if (ix == IDX_RECOIL_CONTROL) { recoilControl_on = v; return; }
     if (ix == IDX_AIM_SNAP)       { aimSnap_enabled = v; return; }
 
-    // AIM ASSIST: mapped to ON/OFF preset (already in your code)
     if (ix == IDX_AIM_ASSIST) {
         if (v) { aim_assist_set_onoff(1); } else { aim_assist_set_onoff(0); }
         return;
     }
 
-    // STICKY AIM: ON => enforce 18/90; OFF => disable
     if (ix == 4) {
-        if (v) {
-            trackermod_lock_on();   // ON: enforce 18/90 and persist
-        } else {
-            trackermod_apply(0);    // OFF path still disables & persists off
-        }
+        if (v) { trackermod_lock_on(); } else { trackermod_apply(0); }
         return;
     }
 
-    if (ix == 5)  { killshotz_force_on(); return; } // KILLSHOTZ stays forced ON
+    if (ix == 5)               { killshotz_force_on(); return; } 
     if (ix == IDX_BUNNY_HOP)   { bunnyHop_on = v; return; }
+    if (ix == IDX_RUN_COMBO)   { runCombo_on = v; return; }   // <<< NEW
     if (ix == IDX_PING_ENEMY)  { pingEnemy_on = v; return; }
-    if (ix == IDX_HOLD_BREATH) { sniperApnea_on   = v; return; }
+    if (ix == IDX_HOLD_BREATH) { sniperApnea_on = v; return; }
+
     if (ix == IDX_RAPIDFIRE) {
-            rapidFire_on = v;
-            set_pvar(SPVAR_32, v);
-            if (v) { rapidFire_off_ms = 7; rapidFire_release_ms = 22; set_pvar(SPVAR_34,7); set_pvar(SPVAR_37,22); }
-            return;
-        }
-    if (ix == IDX_VMSPEED) { rapidFire_speedProfile = v; return; }
+        rapidFire_on = v;
+        set_pvar(SPVAR_32, v);
+        if (v) { rapidFire_off_ms = 7; rapidFire_release_ms = 22; set_pvar(SPVAR_34,7); set_pvar(SPVAR_37,22); }
+        return;
+    }
+
+    if (ix == IDX_VMSPEED)   { rapidFire_speedProfile = v; return; }
     if (ix == IDX_SLIDE_HOP) { slideHop_on = v; return; }
 }
 
-
+/* 
+////////////// MENU: DOES THIS PAGE HAVE A SCREEN? //////////////////////////////
+PURPOSE:
+    FILTERS NON-DISPLAY PAGES FROM NAVIGATION (E.G., UNUSED SLOTS).
+*/
 function has_page(int j) {
     return (j==IDX_RECOIL_CONTROL || j==IDX_AIM_ASSIST || j==IDX_STICKY_AIM ||
-            j==IDX_BUNNY_HOP || j==IDX_PING_ENEMY || j==IDX_HOLD_BREATH ||
-            j==IDX_RAPIDFIRE /*|| j==IDX_SLIDE_HOP*/ || j==ABOUT_IDX);
+            j==IDX_BUNNY_HOP || j==IDX_RUN_COMBO || j==IDX_PING_ENEMY ||
+            j==IDX_HOLD_BREATH || j==IDX_RAPIDFIRE /*|| j==IDX_SLIDE_HOP*/ ||
+            j==ABOUT_IDX);
 }
 
+/* 
+////////////// MENU: NEXT VALID PAGE (WRAP) /////////////////////////////////////
+PURPOSE:
+    MOVE FORWARD THROUGH PAGES UNTIL A DISPLAYABLE PAGE IS FOUND; WRAPS END→START.
+*/
 function next_index(int j) {
     // wrap forward through 0..MAX_MODS_COUNT until we land on a valid page
     do {
@@ -521,6 +720,11 @@ function next_index(int j) {
     return j;
 }
 
+/* 
+////////////// MENU: PREVIOUS VALID PAGE (WRAP) //////////////////////////////////
+PURPOSE:
+    MOVE BACKWARD THROUGH PAGES UNTIL A DISPLAYABLE PAGE IS FOUND; WRAPS START→END.
+*/
 function prev_index(int j) {
     // wrap backward through 0..MAX_MODS_COUNT until we land on a valid page
     do {
@@ -529,6 +733,12 @@ function prev_index(int j) {
     return j;
 }
 
+/* 
+////////////// AIM ASSIST MASTER TOGGLE: PRESETS + PERSIST //////////////////////
+PURPOSE:
+    ENABLE/DISABLE AIM ASSIST. WHEN ENABLING, LOAD A TIGHT, STABLE PRESET AND
+    WRITE SPVARS SO IT SURVIVES REBOOTS. WHEN DISABLING, ZERO THE MODE.
+*/
 function aim_assist_set_onoff(int on) {
     if (on) {
         // ON means the internal mode is "Aim + Shot" (=2)
@@ -554,6 +764,17 @@ function aim_assist_set_onoff(int on) {
     }
 }
 
+/* 
+////////////// MAIN LOOP: INPUT CONDITIONING, UI, MOD DISPATCH //////////////////
+PURPOSE:
+    PER-FRAME ENGINE. READS INPUTS, UPDATES UI, AND RUNS/STOP COMBOS.
+ORDER:
+    1) INPUT NORMALIZATION (DEADZONES, CLAMPS)
+    2) MENU/EDITOR HANDLING
+    3) FEATURE EXECUTION (RECOIL, AA, BUNNY HOP, KILLSHOTZ, ETC.)
+PERF:
+    KEEP EXPENSIVE BRANCHES GUARDED (event_* AND get_ival SHORT-CIRCUITS).
+*/
 main {
     if(RED==255){RED1=FALSE;}
     if(GREEN==255){GREEN1=FALSE;}
@@ -661,11 +882,11 @@ main {
             if(EditVal[ menuPage_idx ] == 0 ){  
                                 
                 line_oled(1,45,127,45,1,0);    
-                print( center_x( 10, OLED_FONT_SMALL_WIDTH ), 15, OLED_FONT_SMALL, 1, NO_EDIT_VAR1[0] ); 
-                print( center_x( 6, OLED_FONT_SMALL_WIDTH ), 30, OLED_FONT_SMALL, 1, NO_EDIT_VAR2[0] );
-                print( center_x( 8, OLED_FONT_SMALL_WIDTH ), 45, OLED_FONT_SMALL, 1, NO_EDIT_VAR3[0] ); 
-            }                                                                                            
-            else {
+                print( center_x( 10, OLED_FONT_SMALL_WIDTH ), 15, OLED_FONT_SMALL, OLED_WHITE, NO_EDIT_VAR1[0] ); 
+                print( center_x(  6, OLED_FONT_SMALL_WIDTH ), 30, OLED_FONT_SMALL, OLED_WHITE, NO_EDIT_VAR2[0] );
+                print( center_x(  8, OLED_FONT_SMALL_WIDTH ), 45, OLED_FONT_SMALL, OLED_WHITE, NO_EDIT_VAR3[0] );
+                                                                                                            
+            } else {
                 // keep idx in bounds
                 if (adjust_variable_idx < 0) adjust_variable_idx = 0;
                 if (adjust_variable_idx >= EDIT_COUNT) adjust_variable_idx = EDIT_COUNT - 1;
@@ -680,21 +901,19 @@ main {
             }
         } 
         if(HOTHACK) { 
-            
             cls_oled(0);       
-                    
             draw_rectangle(); 
 
             if (menuPage_idx == ABOUT_IDX) {
                 display_about_page();
             } else {
                     if (menuPage_idx == IDX_RECOIL_CONTROL)
-                        display_mod(center_x(sizeof(EvilBot_AimbotMOD) - 1, OLED_FONT_SMALL_WIDTH),
-                                    EvilBot_AimbotMOD[0], recoilControl_on, Options[menuPage_idx]);
+                        display_mod(center_x(sizeof(RECOIL_CONTROL) - 1, OLED_FONT_SMALL_WIDTH),
+                                    RECOIL_CONTROL[0], recoilControl_on, Options[menuPage_idx]);
 
                     if (menuPage_idx == IDX_AIM_ASSIST)
-                        display_mod(center_x(sizeof(aimAssist_modeMOD) - 1, OLED_FONT_SMALL_WIDTH),
-                                    aimAssist_modeMOD[0], get_option_value(IDX_AIM_ASSIST), 1);
+                        display_mod(center_x(sizeof(AIM_ASSIST) - 1, OLED_FONT_SMALL_WIDTH),
+                                    AIM_ASSIST[0], get_option_value(IDX_AIM_ASSIST), 1);
 
                     if (menuPage_idx == IDX_STICKY_AIM)
                         display_mod(center_x(sizeof(TRACKERMOD) - 1, OLED_FONT_SMALL_WIDTH),
@@ -703,6 +922,10 @@ main {
                     if (menuPage_idx == IDX_BUNNY_HOP)
                         display_mod(center_x(sizeof(BUNNY_HOP) - 1, OLED_FONT_SMALL_WIDTH),
                                     BUNNY_HOP[0], bunnyHop_on, Options[menuPage_idx]);
+
+                    if (menuPage_idx == IDX_RUN_COMBO)  
+                        display_mod(center_x(sizeof(RUN_COMBO) - 1, OLED_FONT_SMALL_WIDTH),
+                                    RUN_COMBO[0], runCombo_on, Options[menuPage_idx]);                
 
                     if (menuPage_idx == IDX_PING_ENEMY)
                         display_mod(center_x(sizeof(PING) - 1, OLED_FONT_SMALL_WIDTH),
@@ -723,23 +946,12 @@ main {
             HOTHACK = FALSE;
         } 
 
-        if(HOTHACKER543232327){           
-            
-            cls_oled(1);            
-                        
-                HOTHACKE = FALSE;   
-            HOTHACKER543232327 = FALSE;  
-            display_black = TRUE;                                   
-        }
-
-        if(display_black){                            
-            count_black += get_rtime();
-            if(count_black >= TimeToShowIntroPicture)   
-            {                        
-                cls_oled(1);         
-                count_black = 0;      
-                display_black = FALSE; 
-            }                         
+        if (HOTHACKER543232327){
+            cls_oled(0);
+            HOTHACKE = FALSE;
+            HOTHACKER543232327 = FALSE;
+            display_black = FALSE;     // << don’t block the saver
+            count_black = 0;
         }
 
         if(HOTHACKER54545454){
@@ -906,7 +1118,7 @@ main {
             }
         }
         
-        // Only pertains to BUNNY_HOP
+        // BUNNY_HOP
         if (bunnyHop_on) {
             // Start looping while hip-firing (Fire held, not ADS)
             if (get_val(Fire) && !get_val(Aim) && !combo_running(BUNNY_HOP)) {
@@ -916,6 +1128,21 @@ main {
             if (!get_val(Fire) || get_val(Aim) ||
                 event_press(BTN_TACTICAL) || event_press(BTN_LETHAL) || event_press(BTN_MELEE)) {
                 combo_stop(BUNNY_HOP);
+            }
+        }
+
+        // RUN COMBO: while Sprint held, run 2s -> slide -> hop -> repeat
+        if (runCombo_on) {                                  
+            if (get_lval(Sprint) && !get_val(Aim)) {
+                // Don’t fight with other movement helpers while RUN COMBO is active
+                combo_stop(BUNNY_HOP);
+                combo_stop(SH_PRE_HOP);
+                combo_stop(SH_DO_HOP);
+                if (!combo_running(RUN_COMBO)) {
+                    combo_run(RUN_COMBO);
+                }
+            } else {
+                combo_stop(RUN_COMBO);
             }
         }
         
@@ -1016,8 +1243,22 @@ main {
             }                              
         }            
     }  
+    if (HOTHACKER545459999                // overlay enabled
+        && !HOTHACKE                      // not in menu
+        && !HOTHACKER54545454             // not in editor
+        && !display_black                 // not in intro blackout
+        && !SaverOn) {                    // saver is off during active use
+    draw_venombyte_banner();
+}
 } // eof main
 
+/* 
+////////////// EDITOR BOUNDS: MIN/MAX PER VARIABLE /////////////////////////////
+PURPOSE:
+    FOR EACH EDITABLE VARIABLE, DEFINE LEGAL RANGE (INCLUSIVE). USED BY edit_val().
+SAFETY:
+    PREVENTS OUT-OF-RANGE INPUTS THAT COULD CAUSE STICK OVERFLOW OR STUTTER.
+*/
 const int16 ValRange[][] = {
     {  1,   90 },   //  0  aimSnap_resolution
     {  1,   50 },   //  1  input_deadzone
@@ -1042,6 +1283,13 @@ const int16 ValRange[][] = {
     {  1,  100 }    // 20  rapidFire_release_ms
 };
 
+/* 
+////////////// VM TIMING CONTROLLER (INTERNAL SPEED PROFILES) ///////////////////
+PURPOSE:
+    SETS VIRTUAL MACHINE TIMING SCALES FOR SCRIPT EXECUTION CADENCE.
+NOTE:
+    CHANGING VM SPEED AFFECTS COMBO WAITS AND EVENT CADENCE—USE SPARINGLY.
+*/
 define VM_Default = 0;
 function set_Virtual_Machine_Speed (f_speed){
     if     (f_speed == 0) vm_tctrl(-0);
@@ -1052,6 +1300,11 @@ function set_Virtual_Machine_Speed (f_speed){
     else if(f_speed == 5) vm_tctrl(-9);
 }
 
+/* 
+////////////// EXIT UI COMBO: LEAVE MENU/EDITOR, RESTORE SAVER /////////////////
+PURPOSE:
+    GRACEFUL UI EXIT WITH SHORT DELAY, CLEAR OLED, RESET STATE, RE-ENABLE SAVER.
+*/
 int exit_wait = 1500;
 combo EXIT {     
     wait(exit_wait);     
@@ -1059,9 +1312,15 @@ combo EXIT {
     HOTHACKE = FALSE;  
     HOTHACKER54545454 = FALSE;    
     HOTHACKER54545  = FALSE;  
-    SaverOn = TRUE;           // << turn screensaver back on after leaving menu/editor
+    SaverOn = TRUE;  // << turn screensaver back on after leaving menu/editor
+    draw_venombyte_banner();         
 }                             
 
+/* 
+////////////// UI COLOR CONSTANTS AND MENU STATE FLAGS //////////////////////////
+PURPOSE:
+    COLOR ENUMS FOR LED RGB AND GLOBAL FLAGS FOR MENU/TOGGLES.
+*/
 define ColorOFF  = 0;
 define Blue      = 1;
 define Red       = 2;
@@ -1081,6 +1340,13 @@ int HOTHACKER54545DDD;
 int HOTHACKER5454588 = TRUE;
 int HOTHACKER543232327 = TRUE;
 
+/* 
+////////////// RAPID FIRE ENGINE: RANDOMIZED BURSTS WHILE FIRING ///////////////
+PURPOSE:
+    WHEN ARMED, PULSES FIRE ON/OFF WITH SLIGHT RANDOMIZATION TO AVOID PATTERNING.
+PARAMS:
+    rapidFire_on_ms, rapidFire_off_ms ARE READ EACH CYCLE; RELEASE MSPACING TOO.
+*/
 combo EvilBot_auth_enabled { 
     set_val(Fire, 100);
     wait(random(rapidFire_on_ms, rapidFire_on_ms * 2));
@@ -1088,22 +1354,35 @@ combo EvilBot_auth_enabled {
     wait(random(rapidFire_off_ms, rapidFire_off_ms * 2)); 
 }
 
+/* 
+////////////// OLED SPLASH CLEAR AFTER TIMEOUT //////////////////////////////////
+PURPOSE:
+    CLEARS INTRO/SPLASH FLAGS AND OLED AFTER A SHORT DURATION.
+*/
 function QT_MESSAGE_TIMEOUT (){     
 	cls_oled(0);   
 	HOTHACKER543232327  = FALSE;           
 }
+
+/* 
+////////////// SCREENSAVER PARTICLE STEP (RANDOM PIXELS / BLINK) ///////////////
+PURPOSE:
+    ANIMATED SAVER; TOGGLES PIXELS AND BLINKS BRAND/VER TEXT AT INTERVALS.
+PERF:
+    LIGHTWEIGHT—USES get_rtime() TO TIME BLINKS.
+*/
 combo NotoriouscriptzVIP {
-if (NotoriouscriptzVIP_c) {NotoriouscriptzVIP_x = random(1,128);
-NotoriouscriptzVIP_x = random(1,128);
-NotoriouscriptzVIP_y = random(1,64);
-NotoriouscriptzVIP_y = random(1,64);}
-else {
-NotoriouscriptzVIP_x = random(1,128);
-NotoriouscriptzVIP_x = random(1,128);
-NotoriouscriptzVIP_x = random(1,128);
-NotoriouscriptzVIP_y = random(1,64);
-NotoriouscriptzVIP_y = random(1,64);
-NotoriouscriptzVIP_y = random(1,64);}} 
+    NotoriouscriptzVIP_x = random(1,128);
+    NotoriouscriptzVIP_y = random(1,64);
+}
+
+/* 
+////////////// RECOIL CONTROL: APPLY VERTICAL COMPENSATION //////////////////////
+PURPOSE:
+    ADDS recoil_y_compensation TO AIM_Y WHILE SHOOTING TO COUNTER VERTICAL KICK.
+SAFETY:
+    CLAMPS TO [-100, 100] TO AVOID STICK SATURATION.
+*/
 combo EvilBot_Aimbot {
     // Y (vertical) anti-recoil
     anti_recoil_y = get_ival(aim_y) + recoil_y_compensation;
@@ -1112,12 +1391,27 @@ combo EvilBot_Aimbot {
     set_val(aim_y, anti_recoil_y);
 }
 
+/* 
+////////////// AIM ASSIST CORE: STICKY OSCILLATION PATTERN /////////////////////
+PURPOSE:
+    CREATES LEFT/RIGHT MICRO-OFFSETS AROUND CENTER TO STAY IN THE AA “BUBBLE”.
+PARAMS:
+    aimAssist_size (AMPLITUDE) AND aimAssist_time (DWELL); USES offset_sticky_aa().
+*/
 combo EvilBotV4 {
     offset_sticky_aa(moveLX, aimAssist_size * 10);
     wait(aimAssist_time * 10);
     offset_sticky_aa(moveLX, inv(aimAssist_size * 10));
     wait(aimAssist_time * 10);
 }
+
+/* 
+////////////// AIM ASSIST BOOSTER: MICRO-JITTERS FOR ENTRY //////////////////////
+PURPOSE:
+    ADDS SMALL RANDOMIZED JITTERS (X/Y) TO HELP “GRAB” TARGETS WHEN NEAR CENTER.
+CAUTION:
+    TOO LARGE WILL FEEL SHAKY; aimAssist_time AND size GOVERN INTENSITY.
+*/
 combo aa_booster_combo{
     X = random(inv(aimAssist_size), aimAssist_size);
     offset_sticky_aa(moveLX, 27);
@@ -1134,6 +1428,15 @@ combo aa_booster_combo{
     wait(aimAssist_time * 8);
 }
 
+/* 
+////////////// BUNNY HOP: CROUCH TAP + DOUBLE JUMP + LOOP //////////////////////
+PURPOSE:
+    HIP-FIRE MOBILITY TOOL. CROUCH PULSE, THEN DOUBLE-JUMP WITH TIMERS, THEN LOOP.
+GUARDS:
+    main() STARTS WHEN FIRE HELD AND !ADS; STOPS ON RELEASE/ADS/INTERRUPTS.
+TUNING:
+    bunnyHop_delayMultiplier & bunnyHop_timing_ms CONTROL PACE AND CADENCE.
+*/
 combo BUNNY_HOP {
     // optional wind-up
     wait(bunnyHop_delayMultiplier * 250);
@@ -1165,6 +1468,13 @@ combo BUNNY_HOP {
     combo_restart(BUNNY_HOP);
 }
 
+/* 
+////////////// PING ENEMY: BURST TAPS WITH COOLDOWN ////////////////////////////
+PURPOSE:
+    AUTOMATES PING BUTTON WHILE FIRING (AFTER HOLD THRESHOLD) WITH COOLDOWN.
+PARAMS:
+    pingCooldown_ms DEFINES GAP BETWEEN BURSTS.
+*/
 combo COMBO_PING_ENEMY {
     set_val(Ping,100);
     wait(20);
@@ -1176,7 +1486,14 @@ combo COMBO_PING_ENEMY {
     wait(pingCooldown_ms); 
 }
 
-// ======= SLIDE HOP (jump exactly when slide ends) =======
+/* 
+////////////// SLIDE HOP CONSTANTS AND STATE ///////////////////////////////////
+PURPOSE:
+    TIMINGS AND STATE FOR “JUMP AS SLIDE ENDS” MOVEMENT TECHNIQUE.
+NOTES:
+    sh_tracking/hold_ms DETECT A REAL SLIDE VS QUICK TAP; FORWARD_THRESH REQUIRES
+    FORWARD MOTION TO AVOID ACCIDENTAL TRIGGERS.
+*/
 define SH_MIN_SLIDE_MS      = 180;  // hold crouch at least this long to count as a slide
 define SH_DEBOUNCE_MS       = 60;   // short delay after release so you're truly "standing up"
 define SH_STAND_TAP_MS      = 55;   // first X tap: pop from crouch to stand
@@ -1188,11 +1505,21 @@ int sh_tracking   = 0;  // tracking slide-hold time
 int sh_hold_ms    = 0;  // how long crouch has been held
 int sh_arming     = 0;  // armed to fire hop after debounce
 
+/* 
+////////////// SLIDE HOP: PRE-HOP DEBOUNCE //////////////////////////////////////
+PURPOSE:
+    SHORT WAIT AFTER CROUCH RELEASE TO ENSURE WE ARE STANDING BEFORE JUMP SEQUENCE.
+*/
 combo SH_PRE_HOP {
     wait(SH_DEBOUNCE_MS);
     combo_run(SH_DO_HOP);
 }
 
+/* 
+////////////// SLIDE HOP: STAND TAP THEN JUMP TAP //////////////////////////////
+PURPOSE:
+    TWO TAP SEQUENCE ON JUMP BUTTON: FIRST ENSURES UPRIGHT, SECOND EXECUTES HOP.
+*/
 combo SH_DO_HOP {
     // 1) quick X to ensure we’re upright
     set_val(BTN_JUMP, 100);
@@ -1210,6 +1537,11 @@ combo SH_DO_HOP {
     sh_arming = 0;
 }
 
+/* 
+////////////// OLED TOAST: MOD STATUS CENTERED THEN AUTO-CLEAR /////////////////
+PURPOSE:
+    RENDERS A CENTERED STATUS CARD (MOD NAME + ON/OFF), THEN AUTO-CLEARS.
+*/
 int time_to_clear_screen;
 function display_MOD_status(f_val,f_size,f_label){  
     if(!HOTHACKE && !HOTHACKER54545454){                                           
@@ -1225,27 +1557,29 @@ function display_MOD_status(f_val,f_size,f_label){
     } 
 }
 
+/* 
+////////////// SCREENSAVER DRIVER: BRAND/VER BLINK + PARTICLES /////////////////
+PURPOSE:
+    SCHEDULER FOR SAVER PIXEL STEPS AND TEXT BLINKS. TOGGLES BETWEEN FRAMES.
+*/
 function RunSaver() {
     if (SaverOn) {
-        pixel_oled(NotoriouscriptzVIP_x, NotoriouscriptzVIP_y, NotoriouscriptzVIP_c);
         pixel_oled(NotoriouscriptzVIP_x, NotoriouscriptzVIP_y, NotoriouscriptzVIP_c);
         combo_run(NotoriouscriptzVIP);
         NotoriouscriptzVIP_t += get_rtime();
 
-        if (NotoriouscriptzVIP_c && NotoriouscriptzVIP_t == 500) {
-            print(centerPosition(getStringLength(MiscString[0]), OLED_FONT_LARGE_WIDTH), 1,  OLED_FONT_LARGE,  OLED_BLACK, MiscString[0]);
-            print(centerPosition(getStringLength(MiscString[1]), OLED_FONT_LARGE_WIDTH), 60, OLED_FONT_LARGE,  OLED_WHITE, MiscString[1]);
+        if (NotoriouscriptzVIP_t >= 500) {
+            draw_venombyte_banner();
             NotoriouscriptzVIP_t = 0;
-            NotoriouscriptzVIP_c = 0;
-        } else if (!NotoriouscriptzVIP_c && NotoriouscriptzVIP_t == 500) {
-            print(centerPosition(getStringLength(MiscString[0]), OLED_FONT_LARGE_WIDTH),   1,  OLED_FONT_LARGE,  OLED_BLACK, MiscString[0]);
-            print(centerPosition(getStringLength(MiscString[1]), OLED_FONT_MEDIUM_WIDTH), 26, OLED_FONT_MEDIUM, OLED_BLACK, MiscString[1]);
-            NotoriouscriptzVIP_t = 0;
-            NotoriouscriptzVIP_c = 1;
         }
     }
 }
 
+/* 
+////////////// STRING UTIL: COUNT CHARS AT OFFSET ///////////////////////////////
+PURPOSE:
+    MEASURE STRING LENGTH FROM A GIVEN OFFSET FOR CENTERING CALCULATIONS.
+*/
 int stringLength;
 function getStringLength(offset) {
     stringLength = 0; do {
@@ -1254,6 +1588,11 @@ function getStringLength(offset) {
     return stringLength;
 }
 
+/* 
+////////////// POLAR HELPERS: CLAMP RADIUS AND SCALE BY TRIG ////////////////////
+PURPOSE:
+    LIMITS RADIUS TO SAFE RANGE AND SCALES USING PRECOMPUTED SIN/COS COEFS.
+*/
 function get_polar_coordinate(Radius, coef) {
 	if (Radius > 32) {
 		Radius = 32;
@@ -1265,14 +1604,34 @@ function get_polar_coordinate(Radius, coef) {
 	return (Radius * coef) / 1000;
 }
 
+/* 
+////////////// OLED CENTERING BY FONT METRICS ///////////////////////////////////
+PURPOSE:
+    RETURNS START X SO TEXT WITH N CHARACTERS IS HORIZONTALLY CENTERED.
+*/
 function centerPosition(f_chars,f_font) {
-return (OLED_WIDTH / 2) - ((f_chars * f_font) / 2);
+    return (OLED_WIDTH / 2) - ((f_chars * f_font) / 2);
 }
 
+/* 
+////////////// STICK OFFSET: BOUNDED ADDITIVE MOVE WITH GAIN ////////////////////
+PURPOSE:
+    APPLIES A DELTA TO A STICK AXIS WITH AUTO-GAIN SO MOVES NEAR EDGE ARE SMALLER.
+SAFETY:
+    CLAMPS RESULT TO [-100, 100].
+*/
 function offset_sticky_aa(Stick,Value) {
-set_val(Stick, clamp(Value * (100 - abs(get_ival(Stick))) / 100 + get_ival(Stick), -100, 100));return;
+    set_val(Stick, clamp(Value * (100 - abs(get_ival(Stick))) / 100 + get_ival(Stick), -100, 100));return;
 }
 
+/* 
+////////////// SOFT AIM ENGINE: CIRC/ORTH PATTERN WITH VM/WIDTH /////////////////
+PURPOSE:
+    CORE “SOFT” AIM-ASSIST MOTION. BUILDS A CIRCULAR/ORTHOGONAL DRIFT PATTERN
+    AROUND CURRENT INPUT TO MAINTAIN STICKINESS WITHOUT OVERPOWERING INPUT.
+PARAMS:
+    aimAssist_vmSpeed (PHASE SPEED), aimAssist_width (AMPLITUDE), input_deadzone.
+*/
 function Soft_Aim() {
     lx_aim = get_ival(aim_x);
     ly_aim = get_ival(aim_y);
@@ -1321,6 +1680,13 @@ function Soft_Aim() {
     set_val(aim_y, ly_aim);
 }	
 
+/* 
+////////////// FAST INTEGER ATAN2 FOR AIM ANGLES ////////////////////////////////
+PURPOSE:
+    ANGLE COMPUTATION FOR AA PATTERN WITHOUT FLOATING-POINT COST.
+RETURN:
+    0..359 DEGREES (INTEGER). USED BY Soft_Aim() FOR PHASE INCREMENTING.
+*/
 function atan2_16bits(_y, _x) {
     if (_y >= 0) {
         if (_x >= 0) {
@@ -1359,6 +1725,13 @@ function atan2_16bits(_y, _x) {
     return (_angle / 6);
 }
 
+/* 
+////////////// FAST SIN LOOKUP (QUADRANT SYMMETRY) //////////////////////////////
+PURPOSE:
+    APPROXIMATE SIN USING A LOOKUP TABLE AND QUADRANT MIRRORING.
+RANGE:
+    RETURNS SCALED INT (0..±1000). MATCHES Hacked[] SCALE.
+*/
 function sin_(_angle) {
 	if (_angle <= 90) {
 		return Hacked[_angle];
@@ -1375,6 +1748,14 @@ function sin_(_angle) {
 
 	return 0;
 }	
+
+/* 
+////////////// AIM SNAP: QUANTIZE AXIS INTO GRID STEPS //////////////////////////
+PURPOSE:
+    SNAPS STICK AXIS TO INCREMENTS (Resolution) TO STABILIZE FINE AIM.
+EFFECT:
+    REDUCES MICRO NOISE AND CAN “CLICK” INTO ENEMY HITBOXES MORE RELIABLY.
+*/
 function GetAIM_SNAP(Axis, Resolution) {
     if (Axis >= 0) {
         ReT = (Axis % Resolution);
@@ -1393,6 +1774,12 @@ function GetAIM_SNAP(Axis, Resolution) {
     }
     return Axis;
 }
+
+/* 
+////////////// FAST COS LOOKUP (QUADRANT SYMMETRY) //////////////////////////////
+PURPOSE:
+    APPROXIMATE COS USING THE SAME TABLE AS SIN WITH OFFSET RULES.
+*/
 function cos_(_angle) {
 	if (_angle <= 90) {
 		return Hacked[90 - _angle];
@@ -1409,6 +1796,13 @@ function cos_(_angle) {
 	return 0;
 }
 
+/* 
+////////////// TRIG LUT (SCALED 0..1000) FOR SIN/COS ///////////////////////////
+PURPOSE:
+    PRECOMPUTED SINE SAMPLES TO AVOID RUNTIME COSTS. USED BY sin_/cos_.
+NOTE:
+    DO NOT EXCEED INDEX 0..90 IN RAW LOOKUPS; HIGHER ANGLES ARE MIRRORED.
+*/
 const int16 Hacked[] = {
     0, 8, 17, 23, 34, 41, 52, 59, 63, 69,
     75, 81, 87, 90, 104, 121, 139, 156, 173, 190,
@@ -1425,6 +1819,13 @@ const int16 Hacked[] = {
     1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100
 };
 
+/* 
+////////////// STICK NOISE FILTER: APPLY DEADZONES //////////////////////////////
+PURPOSE:
+    ZEROES TINY STICK INPUTS WITHIN input_deadzone FOR BOTH MOVE AND AIM STICKS.
+IMPACT:
+    PREVENTS DRIFT FROM TRIGGERING MODS OR CAUSING MICRO-SHAKE.
+*/
 function RemoveStickNoise() {
     if(isqrt(pow(abs(get_ival(moveLX)),2) + pow(abs(get_ival(moveLY)),2)) <= input_deadzone) {
         set_val(moveLX,0); set_val(moveLY,0);
@@ -1434,18 +1835,39 @@ function RemoveStickNoise() {
     }
 }
 
+/* 
+////////////// FONT METRICS INDICES (WIDTH/HEIGHT/MAXCHARS) /////////////////////
+PURPOSE:
+    INDEXES FOR FONT WIDTH/HEIGHT/CELL COUNT USED BY CENTERING MATH.
+*/
 define FONT_STATS_INDEX_WIDTH    = 0; 
 define FONT_STATS_INDEX_HEIGHT   = 1; 
 define FONT_STATS_INDEX_MAXCHARS = 2; 
 
+/* 
+////////////// OLED CENTERING USING FONT STATS //////////////////////////////////
+PURPOSE:
+    RETURNS LEFT X OFFSET FOR A STRING WITH N CHARS AT A GIVEN FONT SIZE.
+*/
 function horizontal_center_offset(number_characters, font_size) { 
     return (128 - number_characters * FONT_STATS[font_size][FONT_STATS_INDEX_WIDTH]) / 2;
 }             
 
+/* 
+////////////// EXIT MESSAGE STRINGS (CURRENTLY EMPTY) ///////////////////////////
+PURPOSE:
+    PLACEHOLDERS FOR A “SAVED / EXITING” TOAST IF YOU DECIDE TO SHOW IT.
+*/
 const string EXIT_TXT1 = "";  
 const string EXIT_TXT2 = ""; 
 
-
+/* 
+////////////// PERSIST ALL TOGGLES/VALUES TO SPVARS THEN EXIT ///////////////////
+PURPOSE:
+    WRITES EVERY TOGGLE/SETTING TO SPVAR KEYS; CALLS EXIT TO LEAVE UI CLEANLY.
+ROBUSTNESS:
+    ENSURES STICKY AIM PRESET STORED WHEN ON; LOCKS RF TIMINGS TO SAFE DEFAULTS.
+*/
 function save_toggles () {                    
     set_pvar(SPVAR_1,1);                        // AIM SNAP locked ON 
     set_pvar(SPVAR_2,stickNoiseFilter_on);
@@ -1476,8 +1898,9 @@ function save_toggles () {
     set_pvar(SPVAR_27,polarAssist_radius);
     set_pvar(SPVAR_30,pingCooldown_ms);
     set_pvar(SPVAR_33,rapidFire_on_ms); 
-    set_pvar(SPVAR_34,7);                       // RAPID FIRE: VM speed locked to 7
-    set_pvar(SPVAR_37, 22);                     // RAPID FIRE: Delay locked to 22ms
+    set_pvar(SPVAR_34,rapidFire_off_ms);                       // RAPID FIRE: VM speed locked to 7
+    set_pvar(SPVAR_37, rapidFire_release_ms);                  // RAPID FIRE: Delay locked to 22ms
+    set_pvar(SPVAR_38, runCombo_on);
     // set_pvar(SPVAR_29, slideHop_on);             // persist SLIDE HOP ON/OFF
     // TRACKERMOD: persist toggle; if ON also persist preset
     set_pvar(SPVAR_4, stickyAim_on);
@@ -1488,26 +1911,78 @@ function save_toggles () {
     combo_run(EXIT);    
 }
 
+// RUN COMBO: run 2s -> slide -> hop -> small recovery -> repeat while Sprint is held
+// Uses crouch timing similar to SH_MIN_SLIDE_MS so it registers as a true slide
+define RC_RUN_MS        = 2000; // how long to keep running before slide
+define RC_SLIDE_MS      = 220;  // how long to hold crouch for slide
+define RC_STAND_MS      = 60;   // brief stand-up debounce after slide
+define RC_JUMP_MS       = 90;   // jump tap duration
+define RC_RECOVER_MS    = 120;  // cooldown before next cycle
+
+combo RUN_COMBO {
+    // Keep running forward (player controls direction)—just time gate
+    wait(RC_RUN_MS);
+
+    // Slide
+    set_val(Crouch, 100);
+    wait(RC_SLIDE_MS);
+    set_val(Crouch, 0);
+
+    // Stand debounce
+    wait(RC_STAND_MS);
+
+    // Hop
+    set_val(BTN_JUMP, 100);
+    wait(RC_JUMP_MS);
+    set_val(BTN_JUMP, 0);
+
+    // small recovery before next slide+hop cycle
+    wait(RC_RECOVER_MS);
+
+    // Loop. main() stops this if Sprint released or ADS engaged.
+    combo_restart(RUN_COMBO);
+}
+
+/* 
+////////////// SAVE-AND-EXIT PRINT + SCHEDULE EXIT COMBO ////////////////////////
+PURPOSE:
+    OPTIONAL TOAST RENDER + QUICK EXIT; RELIES ON EXIT COMBO TO CLEAN STATE.
+*/
 combo MESSAGE {       
     wait(20);         
     save_toggles ();  
     cls_oled(0);      
-    print(horizontal_center_offset(sizeof(EXIT_TXT1), OLED_FONT_MEDIUM ), 2, OLED_FONT_MEDIUM, 1, EXIT_TXT1[0]); 
-    print(horizontal_center_offset(sizeof(EXIT_TXT2), OLED_FONT_MEDIUM ), 23, OLED_FONT_MEDIUM, 1, EXIT_TXT2[0]);
+    print(horizontal_center_offset(sizeof(EXIT_TXT1), OLED_FONT_MEDIUM ), 2,  OLED_FONT_MEDIUM, OLED_WHITE, EXIT_TXT1[0]); 
+    print(horizontal_center_offset(sizeof(EXIT_TXT2), OLED_FONT_MEDIUM ), 23, OLED_FONT_MEDIUM, OLED_WHITE, EXIT_TXT2[0]);
     exit_wait = 200;     
-}                                                
-                                
+}  
+
+/* 
+////////////// FONT METRICS TABLE (SMALL / MEDIUM / LARGE) //////////////////////
+PURPOSE:
+    WIDTH/HEIGHT/MAXCHARS FOR THREE OLED FONTS. USED BY CENTERING HELPERS.
+*/        
 const uint8 FONT_STATS[][] = {  
     {  7, 10, 18 },   
     { 11, 18, 11 }, 
     { 16, 26,  7 }     
 };                              
-                                
+
+/* 
+////////////// EDITOR HEADER LINE + VALUE RENDER ////////////////////////////////
+PURPOSE:
+    PRINTS THE CURRENT FIELD LABEL AND ITS NUMERIC VALUE (BIG) IN THE EDITOR.
+*/                                
 function HOTHACKER54545(  f_val) {
     print(2, 2, OLED_FONT_SMALL, OLED_WHITE, EditVarStr[adjust_variable_idx]); 
     number_to_string(f_val, find_digits(f_val));     
-}       
-        
+} 
+
+/* 
+////////////// MENU OPTION CYCLE FORWARD WITH WRAP //////////////////////////////
+PURPOSE:
+    INCREMENT CURRENT PAGE’S OPTION VALUE; WRAP AT UPPER BOUND.
+*/
 function f_go_forward (f_variable) {
     f_variable       +=1;   
     if(f_variable  > Min_Max_Options[menuPage_idx][1] )f_variable  = Min_Max_Options[menuPage_idx][0]; 
@@ -1515,12 +1990,22 @@ function f_go_forward (f_variable) {
     return f_variable;
 }
 
+/* 
+////////////// MENU OPTION CYCLE BACKWARD WITH WRAP /////////////////////////////
+PURPOSE:
+    DECREMENT CURRENT PAGE’S OPTION VALUE; WRAP AT LOWER BOUND.
+*/
 function f_go_back (f_variable) {
     f_variable       -=1;   
     if(f_variable  < Min_Max_Options[menuPage_idx][0] )f_variable  = Min_Max_Options[menuPage_idx][1]; 
     return f_variable;
 }
 
+/* 
+////////////// PRINT BIG NUMBER CENTERED TO OLED ////////////////////////////////
+PURPOSE:
+    RENDERS A LARGE, CENTERED INTEGER USING PUTS/PUTC PRIMITIVES.
+*/
 int ssss;                            
 int c_c_c,c_val;   
 function number_to_string(f_val,f_digits) {                  
@@ -1547,15 +2032,22 @@ function number_to_string(f_val,f_digits) {
         c_val /= 10;                                  
     }                                                
     puts_oled(center_x(ssss - 1,OLED_FONT_MEDIUM_WIDTH),27,OLED_FONT_MEDIUM,ssss - 1,OLED_WHITE); 
-}                                                     
+} 
+
+/* 
+////////////// PRINT SMALL NUMBER AT POSITION ///////////////////////////////////
+PURPOSE:
+    UTILITY FOR SMALL, POSITIONED NUMBERS (MIN/MAX IN EDITOR).
+*/
 int n_str_;                 
 function print_number(f_val,f_digits ,print_s_x , print_s_y , f_font) { 
-    n_str_ = 1;  c_val = 10000;                       
-if(f_val < 0) {                                                 
-        putc_oled(n_str_,45);     
-        n_str_ += 1;                                 
-        f_val = abs(f_val);                          
-    }                                                 
+    n_str_ = 1;  c_val = 10000;     
+
+    if(f_val < 0) {                                                 
+            putc_oled(n_str_,45);     
+            n_str_ += 1;                                 
+            f_val = abs(f_val);                          
+        }                                                 
 
     for(c_c_c = 5; c_c_c >= 1; c_c_c--) {                                                 
         if(f_digits >= c_c_c)                             
@@ -1569,6 +2061,12 @@ if(f_val < 0) {
     puts_oled(print_s_x,print_s_y,f_font,n_str_ - 1,OLED_WHITE); 
 }                                       
 
+/* 
+////////////// EDIT WIDGET: ARROWS, MIN/MAX, STEP/HOLD //////////////////////////
+PURPOSE:
+    FULL NUMERIC EDIT CONTROL—DRAWS ARROWS, RESPECTS ValRange BOUNDS, AND
+    SUPPORTS SINGLE-STEP AND FAST-STEP (UP/DOWN) INCREMENTS WHILE AIM HELD.
+*/
 int f_min, f_max;
 define Y_Arrow = 36;
 function edit_val( f_val) {   
@@ -1613,12 +2111,22 @@ function edit_val( f_val) {
     return f_val;                        
 }    
 
+/* 
+////////////// KEY REPEAT: TAP OR HELD-REPEAT INPUT /////////////////////////////
+PURPOSE:
+    RETURNS TRUE ON FIRST TAP OR PERIODICALLY WHEN A BUTTON IS HELD.
+*/
 function press_(f_btn) {
 
 	return event_press(f_btn) || get_ival(f_btn) && get_ptime(f_btn) > 250 
 	       && get_ptime(f_btn) % (get_rtime() * 8) == 0;
-}               
-                
+} 
+
+/* 
+////////////// UTILITY: DIGIT COUNT OF POSITIVE INTEGER /////////////////////////
+PURPOSE:
+    CALCULATE HOW MANY CHARACTERS ARE NEEDED TO DRAW A GIVEN NUMBER.
+*/
 function find_digits(f_num) {                                   
     f_num = abs(f_num);                               
     if(f_num / 10000 > 0) return 5;                   
@@ -1628,15 +2136,31 @@ function find_digits(f_num) {
     return 1;                  
 }                                                     
 
+/* 
+////////////// OLED CENTER X BY CHARACTER COUNT /////////////////////////////////
+PURPOSE:
+    CENTER TEXT HORIZONTALLY USING FONT CELL WIDTH AND CHARACTER COUNT.
+*/
 function center_x(f_chars,f_font) {           
     return (OLED_WIDTH / 2) - ((f_chars * f_font) / 2); 
 }                                                      
 
+/* 
+////////////// UI FRAME: BORDER AND SEPARATORS //////////////////////////////////
+PURPOSE:
+    DRAWS PAGE BORDER AND TOP/BOTTOM DIVIDER LINES FOR CONSISTENT LAYOUT.
+*/
 function draw_rectangle() {
     rect_oled(0, 0,OLED_WIDTH,64,FALSE,1); 
     line_oled(1,14,127,14,1,1); 
     line_oled(1,48,127,48,1,1); 
 }
+
+/* 
+////////////// OPTION LABELS: SHOT MODES AND VM SPEEDS //////////////////////////
+PURPOSE:
+    HUMAN-READABLE NAMES FOR OPTION FAMILIES 31 (SHOT MODES) AND 50 (VM SPEEDS).
+*/
 define ShotModOptions = 31;
 define FireModOptions =  9;
 const string ModOption_31_0 = "OFF"; 
@@ -1651,6 +2175,11 @@ const string ModOption_50_3 = "4 ms";
 const string ModOption_50_4 = "2 ms"; 
 const string ModOption_50_5 = "1 ms";
 
+/* 
+////////////// GLYPH CODES & LAYOUT CONSTANTS FOR OLED //////////////////////////
+PURPOSE:
+    SPECIAL CHARACTER CODES (ARROWS, CROSS/Y/TEXT) AND ROW/LAYOUT CONSTANTS.
+*/
 define UP_arrow         = 131; 
 define DOWN_arrow       = 132; 
 define LEFT_arrow       = 133; 
@@ -1666,6 +2195,13 @@ const string MOD_LABEL  ="";
 const string SLOT_LABEL ="";
 int slot_numb;
 
+/* 
+////////////// OLED PAGE RENDERER: MOD TITLE / PAGE / SLOT / OPTION ////////////
+PURPOSE:
+    COMPOSES THE PAGE: TITLE LINE, PAGE NO., SLOT NO., AND CURRENT OPTION TEXT.
+INPUTS:
+    mod_name, f_toggle (NUMERIC VALUE/STATE), f_option (OPTION FAMILY ID).
+*/
 function display_mod(f_string, mod_name, f_toggle, f_option) {   
     print(f_string, 2, OLED_FONT_SMALL, OLED_WHITE, mod_name);  // was OLED_BLACK
         
@@ -1739,11 +2275,21 @@ function display_mod(f_string, mod_name, f_toggle, f_option) {
     }
 }
 
+/* 
+////////////// MENU BUTTON ARRAY (RIGHT/LEFT/UP/DOWN/JUMP/MELEE/MENU/AIM) ////// 
+PURPOSE:
+    NORMALIZED MAP OF UI KEYS USED BY MENU TIMEOUT WATCHDOG.
+*/
 int MenuButtons[8];
-
 int menu_btn_indx;
 int MenuTimeOut;
 define menu_time_active = 30000;
+
+/* 
+////////////// MENU TIMEOUT WATCHDOG (CLOSES UI ON INACTIVITY) //////////////////
+PURPOSE:
+    RESETS TIMEOUT WHEN ANY MENU KEY IS PRESSED; CLOSES UI WHEN TIMER ELAPSES.
+*/
 function CheckIfBtnIsPressed (){  
     for(menu_btn_indx = 0; menu_btn_indx < 8; menu_btn_indx++){
         if(event_press(MenuButtons[menu_btn_indx]) ){
@@ -1760,9 +2306,36 @@ function CheckIfBtnIsPressed (){
     }
 }
 
+function vcenter_y(font_size) {
+    // Centers a line vertically for the given font in a 64-px tall OLED
+    return (64 - FONT_STATS[font_size][FONT_STATS_INDEX_HEIGHT]) / 2;
+}
+
+/* 
+////////////// ABOUT PAGE: PRODUCT NAME + VERSION CENTERED //////////////////////
+PURPOSE:
+    SIMPLE READ-ONLY PAGE SHOWING STR_PRODUCT_NAME AND STR_PRODUCT_VER.
+*/
 function display_about_page() {
     cls_oled(0);
     // product + version only
     print(center_x(sizeof(STR_PRODUCT_NAME) - 1, OLED_FONT_MEDIUM_WIDTH), 18, OLED_FONT_MEDIUM, OLED_WHITE, STR_PRODUCT_NAME[0]);
     print(center_x(sizeof(STR_PRODUCT_VER)  - 1, OLED_FONT_MEDIUM_WIDTH), 38, OLED_FONT_MEDIUM, OLED_WHITE, STR_PRODUCT_VER[0]);
-}   
+}  
+
+/*
+////////////// VENOMBYTE BANNER: VERSION + BRAND CENTERED //////////////////////
+PURPOSE:
+    DISPLAYS THE "VENOMBYTE" BRAND BANNER ON THE OLED WHEN ENABLED.
+*/
+function draw_venombyte_banner() {
+    if(!KEEP_BRAND) return;
+    // horizontally & vertically center for MEDIUM font
+    print(
+        centerPosition(getStringLength(MiscString[1]), OLED_FONT_MEDIUM_WIDTH),
+        vcenter_y(OLED_FONT_MEDIUM),
+        OLED_FONT_MEDIUM,
+        OLED_WHITE,
+        MiscString[1]   // "VENOMBYTE"
+    );
+}
