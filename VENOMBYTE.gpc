@@ -9,38 +9,43 @@
 
 ///////////////////////////////////////////////////////////// MODS ////////////////////////////////////////////////////////////////////
 /*
-AIM SNAP
-Description: Snaps your aim toward the nearest target within a small field of view for quicker target acquisition.
-
-AIM ASSIST
-Description: Adds subtle left/right stick movement while aiming to make the in-game aim assist bubble feel stronger and “stickier.”
-
-STICKY AIM
-Description: Creates a tight lock-on effect by constantly pulling your crosshair toward targets and keeping it inside the hitbox.
+OLED MENU ORDER (matches in-game OLED pages)
 
 RECOIL CONTROL
 Description: Applies downward stick movement to automatically reduce weapon recoil when firing.
 
+AIM ASSIST
+Description: Adds subtle left/right stick movement while aiming to make the in-game aim-assist bubble feel stronger and “stickier.”
+
+STICKY AIM
+Description: Creates a tight lock-on effect by constantly pulling your crosshair toward targets and keeping it inside the hitbox.
+
 BUNNY HOP
-Description: Automatically performs timed jumps while firing from the hip, keeping you mobile and harder to hit.
+Description: Automatically performs timed jumps while hip-firing, keeping you mobile and harder to hit.
+
+GYRO BOOST
+Description: Uses gyro input (ADS-aware) to add smooth RS adjustments based on controller tilt, with a small deadzone to prevent drift.
 
 PING ENEMY
-Description: Rapidly taps the ping button while shooting so enemies get marked more easily.
+Description: Rapidly taps the ping button while shooting so enemies get marked more easily (with a cooldown to avoid spam).
 
 HOLD BREATH (Sniper Apnea)
 Description: Automatically holds breath when aiming with a sniper to steady your scope without extra button presses.
 
-RAPIDFIRE
-Description: Converts semi-automatic weapons into full-auto by pressing fire rapidly at a set speed.
+RAPID FIRE
+Description: Converts semi-automatic weapons into full-auto by pulsing the fire trigger at a tuned speed.
+
+— OTHER MODS (auto/hidden pages) —
+
+AIM SNAP
+Description: Quantizes right-stick input into a fine grid for steadier micro-aim; active in HIP only to avoid ADS shake.
 
 KILLSHOTZ
-Description: Adds micro-movements when firing inside a close radius to increase hit registration on enemies.
+Description: Adds tiny polar micromovements while firing inside a close radius to improve hit registration.
 
 SLIDE HOP (if you enable it)
-Description: Triggers a jump right as a slide ends, letting you chain slides into hops for faster evasive movement.
+Description: Triggers a jump right as a slide ends (while sprinting forward) so you can chain slides into hops for faster evasive movement.
 
-RUN COMBO (if you enable it)
-Description: While moving fully forward (LS ≈ 100) and not pressing RT/LT, auto-cycles run 2s → slide → hop → repeat for continuous evasive movement.
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,6 +68,7 @@ int BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT;
 int BTN_R3;
 int moveLX, moveLY;
 int Ping;
+int suppress_oled = 0;
 
 /* 
 ////////////// POLAR STICK ALIASES (PLATFORM-AGNOSTIC) /////////////////////////
@@ -74,7 +80,6 @@ WHY:
 define PS = POLAR_RS;
 define PX = POLAR_RX;
 define PY = POLAR_RY;
-define KEEP_BRAND = 1;
 
 /* 
 ////////////// ADJUSTABLE VARIABLES: RUNTIME-TUNED PARAMETERS ///////////////////
@@ -96,6 +101,7 @@ int aimAssist_time;
 int stickyAim_size; 
 int stickyAim_speed; 
 int recoil_y_compensation;  
+int recoil_x_compensation;
 int bunnyHop_delayMultiplier; 
 int bunnyHop_timing_ms; 
 int aaBooster_frequency; 
@@ -116,8 +122,8 @@ PURPOSE:
 NOTES:
     ABOUT_IDX DEFINES A READ-ONLY PAGE. MAX_MODS_COUNT ADDS WRAP-AROUND SPACE.
 */
-define EDIT_COUNT               = 21;                   
-define AMOUNT_OF_VALNAME_IDX    = 22; 
+define EDIT_COUNT               = 22;                   
+define AMOUNT_OF_VALNAME_IDX    = 23; 
 define MAX_MODS_COUNT           = 15;     
 define ABOUT_IDX                = 15;          // new About page index      
 define IDX_RECOIL_CONTROL       = 0;
@@ -125,7 +131,7 @@ define IDX_AIM_SNAP             = 1;
 define IDX_AIM_ASSIST           = 3;
 define IDX_STICKY_AIM           = 4;
 define IDX_BUNNY_HOP            = 8;
-define IDX_RUN_COMBO            = 9;
+define IDX_GYRO_BOOST           = 9;
 define IDX_PING_ENEMY           = 10;
 define IDX_HOLD_BREATH          = 11;
 define IDX_RAPIDFIRE            = 12;
@@ -151,7 +157,7 @@ int aimAssist_mode;
 int stickyAim_on; 
 int killshotz_on;
 int bunnyHop_on;
-int runCombo_on; 
+int gyroBoost_on;
 int slideHop_on;
 int pingEnemy_on;
 int sniperApnea_on;
@@ -159,6 +165,8 @@ int rapidFire_on;
 int rapidFire_speedProfile;
 int edit_tmp_val, tmp_val;
 int int_controller, out_console;
+int ads_scale_num, s_size, s_speed;
+int damping, vm;
 
 /* 
 ////////////// UI STRINGS: MOD NAMES / LABELS / PRODUCT INFO ///////////////////
@@ -170,11 +178,13 @@ NOTES:
 const string RECOIL_CONTROL     = "RECOIL CONTROL" ;
 const string AIM_ASSIST         = "AIM ASSIST" ;
 const string TRACKERMOD         = "STICKY AIM" ; 
-const string BUNNY_HOP		    = "BUNNY HOP" ;
-const string RUN_COMBO          = "RUN COMBO" ;
+const string BUNNY_HOP		    = "BUNNY HOP SHOTS" ;
+const string GYROBOOST          = "GYRO BOOST" ;
 const string PING			    = "PING ENEMY" ;
 const string HOLD			    = "SNIPER APNEA" ;
 const string RAPIDFIRE          = "RAPID FIRE" ;
+const string GYROADS            = "GYRO ADS";
+
 // const string SLIDE_HOP         = "SLIDE HOP" ;
 const string OFF			    = "OFF" ;    
 const string ON			        = "ON" ;   
@@ -188,6 +198,11 @@ const string NO_EDIT_VAR3       = "   v1.0";
 const string STR_PRODUCT_NAME   = "VENOMBYTE";
 const string STR_PRODUCT_VER    = "v1.0";
 
+// Globals
+int gyro_ads_only          = 1;
+int gyro_deadzone          = 5;
+int gyro_scale_x           = 4;
+int gyro_scale_y           = 4;
 
 /* 
 ////////////// OPTIONS TABLE: PAGE → OPTION FAMILY (1/31/50/…) //////////////////
@@ -209,7 +224,7 @@ const uint8 Options [] = {
     69, // 6
     1,  // 7 HEADSHOT
     1,  // 8 BUNNY HOP
-    1,  // 9 RUN COMBO
+    1,  // 9 GYRO BOOST
     1,  // 10 PING
     1,  // 11 HOLD
     1,  // 12 RAPIDFIRE (ON/OFF)
@@ -235,7 +250,7 @@ WHY:
     PREVENTS EDITOR FROM SELECTING FIELDS NOT MEANT FOR THAT PAGE.
 */
 const uint8 OptRange [][] = {
-    { 9, 9 },  // 0
+    { 9, 10 },  // 0  RECOIL CONTROL edits = Vertical(9) .. Horizontal(10)
     { 0, 0 },  // 1
     { 1, 1 },  // 2
     { 2, 6 },  // 3
@@ -287,29 +302,29 @@ UX:
     SHOWN BY HOTHACKER54545() AT THE TOP OF THE EDITOR SCREEN.
 */
 const string EditVarStr []={
-    "Evilbot AIM.A", 
-    "Evilbot2233",  
-    "Vm Speed",
-    "Width Shape",
-    "Vertical",
-    "Size",
-    "Time",
-    "Size",
-    "Time",
-    " Vertical Recoil",
-    "Time Start",
-    "Time",
-    "Size",
-    "Time",
-    "Radius",
-    "Speed",     
-    "NOTORIOUS",         
-    "Width Shape", 
-    "Delay",
-    "FR Speed", 
-    "FR Release"  
+    "Evilbot AIM.A",        // 0
+    "Evilbot2233",          // 1
+    "Vm Speed",             // 2
+    "Width Shape",          // 3
+    "Vertical",             // 4
+    "Size",                 // 5
+    "Time",                 // 6
+    "Size",                 // 7
+    "Time",                 // 8
+    " Vertical Recoil",     // 9
+    " Horizontal Recoil",   // 10  NEW
+    "Time Start",           // 11  (shifted down by 1)
+    "Time",                 // 12
+    "Size",                 // 13
+    "Time",                 // 14
+    "Radius",               // 15
+    "Speed",                // 16
+    "NOTORIOUS",            // 17
+    "Width Shape",          // 18
+    "Delay",                // 19
+    "FR Speed",             // 20
+    "FR Release"            // 21
 };
-
 
 /* 
 ////////////// GLOBAL SCREEN / TIMEOUT CONSTANTS ////////////////////////////////
@@ -339,14 +354,14 @@ SIDE EFFECTS:
     OVERRIDES CURRENT STICKY SETTINGS WHEN CALLED.
 */
 function trackermod_lock_on() {
-    stickyAim_on = 1;   //STICKY AIM ON
-    stickyAim_size  = 18;  // Size
-    stickyAim_speed  = 90;  // Speed
+    stickyAim_on                = 1;   //STICKY AIM ON
+    stickyAim_size              = 22;  // Size
+    stickyAim_speed             = 100;  // Speed
 
     // persist these so they survive reboots
     set_pvar(SPVAR_4,  1);   //STICKY AIM ON
-    set_pvar(SPVAR_13, 18);  // Size
-    set_pvar(SPVAR_14, 90);  // Speed
+    set_pvar(SPVAR_13, 22);  // Size
+    set_pvar(SPVAR_14, 100);  // Speed
 }
 
 /* 
@@ -357,18 +372,18 @@ PURPOSE:
 */
 function trackermod_apply(int on) {
     if (on) {
-        stickyAim_on = 1;   // ON
-        stickyAim_size  = 18;  // Size
-        stickyAim_speed  = 90;  // Speed
-        set_pvar(SPVAR_4,  1);   // persist ON
-        set_pvar(SPVAR_13, 18);  // persist Size
-        set_pvar(SPVAR_14, 90);  // persist Speed
+        stickyAim_on    = 1;    // ON
+        stickyAim_size  = 22;   // match the stronger preset
+        stickyAim_speed = 100;
+        set_pvar(SPVAR_4,  1);
+        set_pvar(SPVAR_13, 22);
+        set_pvar(SPVAR_14, 100);
     } else {
-        stickyAim_on = 0;   // OFF
-        set_pvar(SPVAR_4,  0);   // persist OFF
-        // (no need to touch SPVAR_13/14 when OFF)
+        stickyAim_on = 0;       // OFF
+        set_pvar(SPVAR_4,  0);
     }
 }
+
 
 /* 
 ////////////// KILLSHOTZ: FORCE ON AND PERSIST //////////////////////////////////
@@ -456,69 +471,86 @@ ORDER MATTERS:
     SET ALL PDEPENDENCIES (E.G., AIM ASSIST MODE) BEFORE COMPUTING DERIVATIVES.
 */
 init {
-    setup_controls();   // call this for cross-platform support
+    setup_controls();
+
     // ================= AIM / ASSIST DEFAULTS =================
-    aimSnap_enabled             = 1;                          // AIM SNAP toggle (1 = ON by default)
-    stickNoiseFilter_on         = get_pvar(SPVAR_2,  0, 1, 0); // General ON/OFF state storage
-    aimAssist_mode              = get_pvar(SPVAR_3, 0, 2, 2);  // AIM ASSIST mode (0=off, 1=ON, 2=Aim+Shot default)
-    aim_assist_set_onoff(1);                               // Force AIM ASSIST to default ON (mode = Aim+Shot)
-    
+    aimSnap_enabled      = 1;                      // keep ON, but we'll gate it to HIP only below
+    stickNoiseFilter_on  = get_pvar(SPVAR_2,  0, 1, 0);
+    aimAssist_mode       = get_pvar(SPVAR_3, 0, 2, 2);
+    aim_assist_set_onoff(1);                      // Aim + Shot
+
     // ================= MOVEMENT MODS =================
-    slideHop_on                 = 0;                          // SLIDE HOP default OFF
-    trackermod_lock_on();                                     // STICKY AIM lock ON at preset (Size=18, Speed=90)
-    recoilControl_on            = 1;                          // RECOIL CONTROL default ON
-    bunnyHop_on                 = 1;                          // BUNNY_HOP default ON
-    runCombo_on                 = get_pvar(SPVAR_38, 0, 1, 1);                          // RUN COMBO default ON
+    slideHop_on     = 0;
+    trackermod_lock_on();                         // Sticky Aim preset (size=18, speed=90)
+    recoilControl_on= 1;
+    bunnyHop_on     = 1;
+
+    // ================= GYRO =================
+    gyroBoost_on    = get_pvar(SPVAR_38, 0, 1, 1);
+    gyro_ads_only   = get_pvar(SPVAR_41, 0, 1, 1);
+    gyro_deadzone   = get_pvar(SPVAR_42, 0, 50, 6);  // a touch higher to smooth ADS
+    gyro_scale_x    = get_pvar(SPVAR_43, 0, 20, 4);
+    gyro_scale_y    = get_pvar(SPVAR_44, 0, 20, 4);
 
     // ================= OTHER CORE MODS =================
-    killshotz_on                = get_pvar(SPVAR_26, 0, 1, 1); // KILLSHOTZ default ON
-    killshotz_force_on();                                     // Ensure KILLSHOTZ is always ON/persisted
-    pingEnemy_on                = 1;                          // PING ENEMY default ON
-    sniperApnea_on              = 1;                          // HOLD BREATH (SNIPER APNEA) default ON
-    rapidFire_on                = 0;                          // RAPIDFIRE default ON
-    rapidFire_speedProfile      = get_pvar(SPVAR_35, 1, 5, 0); // RAPIDFIRE speed profile
+    killshotz_on    = get_pvar(SPVAR_26, 0, 1, 1);
+    killshotz_force_on();
+    pingEnemy_on    = 1;
+    sniperApnea_on  = 1;
+    rapidFire_on    = 0;
+    rapidFire_speedProfile = get_pvar(SPVAR_35, 1, 5, 0);
 
-    // ================= AIM SNAP SETTINGS =================
-    aimSnap_resolution          = 3;                          // AIM SNAP FOV (default 3)
-    input_deadzone              = 11;                         // Deadzone threshold
-    aimAssist_vmSpeed           = 23;                         // AIM ASSIST VM Speed (default 50)
-    aimAssist_width             = 7;                          // AIM ASSIST Width Shape
-    aimAssist_vertical          = 5; // Vertical adjustment
-    aimAssist_size              = 4; // Size
-    aimAssist_time              = 8; // Time
-    
-    // ================= TRACKER / STICKY AIM SETTINGS =================
-    stickyAim_size              = 18; // STICKY AIM Size
-    stickyAim_speed             = 45; // STICKY AIM Speed
-    
+    // ================= AIM SNAP (grid) =================
+    // Keep the grid tight, but we will disable it while ADS (to stop the visible step/shake).
+    aimSnap_resolution = 3;
+    input_deadzone     = 11;
+
+    // ================= AIM ASSIST core (reduced ADS shake) =================
+    // These are the main "bubble" movers. Lower size/width and slightly higher vmSpeed = smoother in ADS.
+    aimAssist_vmSpeed  = 32;
+    aimAssist_width    = 10;
+    aimAssist_vertical = 1;
+    aimAssist_size     = 8;
+    aimAssist_time     = 10;
+
+    // ================= STICKY AIM ring =================
+    stickyAim_size     = 18;   // keep your good preset
+    stickyAim_speed    = 90;   // faster orbit helps "grab", we'll scale it down in ADS below
+
     // ================= RECOIL CONTROL =================
-    recoil_y_compensation       = 22;                                                    // Vertical Recoil default
-    bunnyHop_delayMultiplier    = get_pvar(SPVAR_17, 1, 10, 1);   // Bunny Hop: delay multiplier
-    bunnyHop_timing_ms          = get_pvar(SPVAR_18, 1, 999, 100);// Bunny Hop: crouch/jump timing
-    aaBooster_frequency         = get_pvar(SPVAR_20, 1, 99, 5);   // AA booster: jitter frequency
-    aaBooster_delay_ms          = get_pvar(SPVAR_21, 1, 2000, 1500); // AA booster: jitter delay
-    
-    // ================= HOTKEYS & EXTRA VARIABLES =================
-    userHotkeyCode              = get_pvar(SPVAR_23, 1, 100, 13); // Custom hotkey #19
-    param_slot_a                = get_pvar(SPVAR_24, 1, 100, 50); // General param slot
-    param_slot_b                = get_pvar(SPVAR_25, 1, 100, 9);  // General param slot
-    polarAssist_radius          = 10;                                                    // Polar Aim Assist radius
-    
+    recoil_y_compensation    = get_pvar(SPVAR_15, -100, 100, 25);
+    recoil_x_compensation    = get_pvar(SPVAR_22, -100, 100, 0);
+    bunnyHop_delayMultiplier = get_pvar(SPVAR_17, 1, 10, 1);
+    bunnyHop_timing_ms       = get_pvar(SPVAR_18, 1, 999, 100);
+
+    // ================= AA BOOSTER (subtle, to avoid ADS shake) =================
+    aaBooster_frequency = 6;
+    aaBooster_delay_ms  = 1400;
+
+    // ================= EXTRA VARS =================
+    userHotkeyCode   = get_pvar(SPVAR_23, 1, 100, 13);
+    param_slot_a     = get_pvar(SPVAR_24, 1, 100, 50);
+    param_slot_b     = get_pvar(SPVAR_25, 1, 100, 9);
+
+    // ================= POLAR ASSIST =================
+    polarAssist_radius = 12;      // close-range only
+    // PolarAngle is already 30 in your globals
+
     // ================= TIMINGS (RAPID FIRE) =================
-    pingCooldown_ms             = get_pvar(SPVAR_30, 1, 2000, 1000); // Ping cooldown
-    rapidFire_on_ms             = get_pvar(SPVAR_33, 1, 1000, 4);    // AA random offset
-    rapidFire_off_ms            = get_pvar(SPVAR_34, 1, 1000, 7);    // RAPID FIRE speed (ms between shots)
-    rapidFire_release_ms        = get_pvar(SPVAR_37, 1, 100,  22);   // RAPID FIRE release (ms)
-    
+    pingCooldown_ms      = get_pvar(SPVAR_30, 1, 2000, 1000);
+    rapidFire_on_ms      = get_pvar(SPVAR_33, 1, 1000, 4);
+    rapidFire_off_ms     = get_pvar(SPVAR_34, 1, 1000, 7);
+    rapidFire_release_ms = get_pvar(SPVAR_37, 1, 100, 22);
+
     // ================= GENERAL =================
-    slot_numb = get_slot();                                     // Current slot number on Zen device
+    slot_numb = get_slot();
 
-
-    // active_aiming depends on aimAssist_vmSpeed/89099 already loaded above
+    // Phase flip cadence for Soft_Aim; we’ll damp it in ADS below
     active_aiming = (((360 + aimAssist_vmSpeed) / aimAssist_vmSpeed) + 1) * aimAssist_vertical;
 
     cls_oled(0);
 }
+
 
 /* 
 ////////////// GLOBALS: LED FADE / MATH / AIM STATE / TRACKER ANGLE ////////////
@@ -536,7 +568,6 @@ int X;
 int CurRX, CurRY;
 int CurrentRX, CurrentRY;
 int ReT;
-int anti_recoil_y;
 int lx_aim, ly_aim;
 int input_mag;
 int first_aim;
@@ -582,17 +613,18 @@ function get_edit_value(int ix) {
     if (ix == 7)  return stickyAim_size;
     if (ix == 8)  return stickyAim_speed;
     if (ix == 9)  return recoil_y_compensation;
-    if (ix == 10) return bunnyHop_delayMultiplier;
-    if (ix == 11) return bunnyHop_timing_ms;
-    if (ix == 12) return aaBooster_frequency;
-    if (ix == 13) return aaBooster_delay_ms;
-    if (ix == 14) return polarAssist_radius;
-    if (ix == 15) return param_slot_a;
-    if (ix == 16) return param_slot_b;
-    if (ix == 17) return pingCooldown_ms;
-    if (ix == 18) return rapidFire_on_ms;
-    if (ix == 19) return rapidFire_off_ms;
-    if (ix == 20) return rapidFire_release_ms;
+    if (ix == 10) return recoil_x_compensation;  // NEW
+    if (ix == 11) return bunnyHop_delayMultiplier;
+    if (ix == 12) return bunnyHop_timing_ms;
+    if (ix == 13) return aaBooster_frequency;
+    if (ix == 14) return aaBooster_delay_ms;
+    if (ix == 15) return polarAssist_radius;
+    if (ix == 16) return param_slot_a;
+    if (ix == 17) return param_slot_b;
+    if (ix == 18) return pingCooldown_ms;
+    if (ix == 19) return rapidFire_on_ms;
+    if (ix == 20) return rapidFire_off_ms;
+    if (ix == 21) return rapidFire_release_ms;
     return 0;
 }
 
@@ -604,27 +636,28 @@ VALIDATION:
     CALLER ENSURES BOUNDS VIA edit_val() BEFORE THIS WRITE.
 */
 function set_edit_value(int ix, int v) {
-    if (ix == 0)  { aimSnap_resolution            = v; return; }
-    if (ix == 1)  { input_deadzone             = v; return; }
-    if (ix == 2)  { aimAssist_vmSpeed            = v; return; }
-    if (ix == 3)  { aimAssist_width             = v; return; }
-    if (ix == 4)  { aimAssist_vertical             = v; return; }
-    if (ix == 5)  { aimAssist_size             = v; return; }
-    if (ix == 6)  { aimAssist_time             = v; return; }
-    if (ix == 7)  { stickyAim_size            = v; return; }
-    if (ix == 8)  { stickyAim_speed            = v; return; }
-    if (ix == 9)  { recoil_y_compensation             = v; return; }
-    if (ix == 10) { bunnyHop_delayMultiplier              = v; return; }
-    if (ix == 11) { bunnyHop_timing_ms             = v; return; }
-    if (ix == 12) { aaBooster_frequency            = v; return; }
-    if (ix == 13) { aaBooster_delay_ms             = v; return; }
-    if (ix == 14) { polarAssist_radius                      = v; return; }
-    if (ix == 15) { param_slot_a                = v; return; }
-    if (ix == 16) { param_slot_b           = v; return; }
-    if (ix == 17) { pingCooldown_ms    = v; return; }
-    if (ix == 18) { rapidFire_on_ms        = v; return; }
-    if (ix == 19) { rapidFire_off_ms          = v; return; }
-    if (ix == 20) { rapidFire_release_ms              = v; return; }
+    if (ix == 0)  { aimSnap_resolution     = v; return; }
+    if (ix == 1)  { input_deadzone         = v; return; }
+    if (ix == 2)  { aimAssist_vmSpeed      = v; return; }
+    if (ix == 3)  { aimAssist_width        = v; return; }
+    if (ix == 4)  { aimAssist_vertical     = v; return; }
+    if (ix == 5)  { aimAssist_size         = v; return; }
+    if (ix == 6)  { aimAssist_time         = v; return; }
+    if (ix == 7)  { stickyAim_size         = v; return; }
+    if (ix == 8)  { stickyAim_speed        = v; return; }
+    if (ix == 9)  { recoil_y_compensation  = v; return; }
+    if (ix == 10) { recoil_x_compensation  = v; return; } // NEW
+    if (ix == 11) { bunnyHop_delayMultiplier = v; return; }
+    if (ix == 12) { bunnyHop_timing_ms     = v; return; }
+    if (ix == 13) { aaBooster_frequency    = v; return; }
+    if (ix == 14) { aaBooster_delay_ms     = v; return; }
+    if (ix == 15) { polarAssist_radius     = v; return; }
+    if (ix == 16) { param_slot_a           = v; return; }
+    if (ix == 17) { param_slot_b           = v; return; }
+    if (ix == 18) { pingCooldown_ms        = v; return; }
+    if (ix == 19) { rapidFire_on_ms        = v; return; }
+    if (ix == 20) { rapidFire_off_ms       = v; return; }
+    if (ix == 21) { rapidFire_release_ms   = v; return; }
 }
 
 /* 
@@ -648,7 +681,7 @@ function get_option_value(int ix) {
     if (ix == IDX_STICKY_AIM)     return stickyAim_on;
     if (ix == 5)                  return killshotz_on; // KILLSHOTZ (kept)
     if (ix == IDX_BUNNY_HOP)      return bunnyHop_on;
-    if (ix == IDX_RUN_COMBO)      return runCombo_on;
+    if (ix == IDX_GYRO_BOOST)     return gyroBoost_on;
     if (ix == IDX_PING_ENEMY)     return pingEnemy_on;
     if (ix == IDX_HOLD_BREATH)    return sniperApnea_on;
     if (ix == IDX_RAPIDFIRE)      return rapidFire_on;
@@ -680,7 +713,7 @@ function set_option_value(int ix, int v) {
 
     if (ix == 5)               { killshotz_force_on(); return; } 
     if (ix == IDX_BUNNY_HOP)   { bunnyHop_on = v; return; }
-    if (ix == IDX_RUN_COMBO)   { runCombo_on = v; return; }   // <<< NEW
+    if (ix == IDX_GYRO_BOOST)  { gyroBoost_on = v; return; }
     if (ix == IDX_PING_ENEMY)  { pingEnemy_on = v; return; }
     if (ix == IDX_HOLD_BREATH) { sniperApnea_on = v; return; }
 
@@ -702,7 +735,7 @@ PURPOSE:
 */
 function has_page(int j) {
     return (j==IDX_RECOIL_CONTROL || j==IDX_AIM_ASSIST || j==IDX_STICKY_AIM ||
-            j==IDX_BUNNY_HOP || j==IDX_RUN_COMBO || j==IDX_PING_ENEMY ||
+            j==IDX_BUNNY_HOP || j==IDX_GYRO_BOOST || j==IDX_PING_ENEMY ||
             j==IDX_HOLD_BREATH || j==IDX_RAPIDFIRE /*|| j==IDX_SLIDE_HOP*/ ||
             j==ABOUT_IDX);
 }
@@ -741,27 +774,69 @@ PURPOSE:
 */
 function aim_assist_set_onoff(int on) {
     if (on) {
-        // ON means the internal mode is "Aim + Shot" (=2)
-        aimAssist_mode = 2;
+        // "Aim + Shot"
+        aimAssist_mode    = 2;
 
-        // Tight sticky bubble preset
-        aimAssist_vmSpeed = 32;  // Vm Speed
-        aimAssist_width   = 10;  // Width Shape
-        aimAssist_vertical= 1;   // Vertical
-        aimAssist_size    = 8;  // Size
-        aimAssist_time    = 10;  // Time
+        // Punchier but still smooth in ADS
+        aimAssist_vmSpeed = 30;  // slightly calmer phase speed (helps ADS)
+        aimAssist_width   = 12;  // wider orbit for stronger bubble entry
+        aimAssist_vertical= 2;   // add a touch more vertical
+        aimAssist_size    = 10;  // slightly bigger amplitude
+        aimAssist_time    = 9;   // a hair faster dwell
 
-        // Persist so they survive reboots
+        // Persist the above
         set_pvar(SPVAR_3,  2);
-        set_pvar(SPVAR_8,  30);
-        set_pvar(SPVAR_9,  10);
-        set_pvar(SPVAR_10, 7);
-        set_pvar(SPVAR_11, 10);
-        set_pvar(SPVAR_12, 12);
+        set_pvar(SPVAR_8,  30);  // vmSpeed
+        set_pvar(SPVAR_9,  12);  // width
+        set_pvar(SPVAR_10, 2);   // vertical
+        set_pvar(SPVAR_11, 10);  // size
+        set_pvar(SPVAR_12, 9);   // time
     } else {
         aimAssist_mode = 0;
         set_pvar(SPVAR_3, 0);
     }
+}
+
+/* 
+////////////// INPUT DEADZONE: APPLY TO AIM + FIRE TRIGGERS //////////////////////
+PURPOSE:
+    ZERO OUT SMALL INPUTS TO AVOID DRIFT/NOISE. APPLIED TO AIM + FIRE TRIGGERS.
+*/
+function clamp_int(v, lo, hi) {
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+}
+
+/*
+////////////// INPUT DEADZONE: APPLY TO AIM + FIRE TRIGGERS //////////////////////
+PURPOSE:
+    ZERO OUT SMALL INPUTS TO AVOID DRIFT/NOISE. APPLIED TO AIM + FIRE TRIGGERS.
+*/
+int gx, gz, rx, ry;
+function apply_gyro_boost() {
+    if (!gyroBoost_on) return;
+
+    // ADS-only behavior (you can change to hip+ADS by toggling gyro_ads_only elsewhere)
+    if (gyro_ads_only && !get_val(Aim)) return;
+
+    gx = get_ival(PS4_GYROX);
+    gz = get_ival(PS4_GYROZ);
+
+    if (abs(gx) < gyro_deadzone) gx = 0;
+    if (abs(gz) < gyro_deadzone) gz = 0;
+
+    rx = get_ival(aim_x);
+    ry = get_ival(aim_y);
+
+    rx = rx + (gz * gyro_scale_x);
+    ry = ry + (gx * gyro_scale_y);
+
+    rx = clamp_int(rx, -100, 100);
+    ry = clamp_int(ry, -100, 100);
+
+    set_val(aim_x, rx);
+    set_val(aim_y, ry);
 }
 
 /* 
@@ -776,6 +851,13 @@ PERF:
     KEEP EXPENSIVE BRANCHES GUARDED (event_* AND get_ival SHORT-CIRCUITS).
 */
 main {
+
+    if (get_ival(BTN_MENU) || get_ival(BTN_UP) || get_ival(BTN_DOWN) || get_ival(BTN_LEFT) || get_ival(BTN_RIGHT)) {
+        suppress_oled = 1;   // user is likely in a settings/program UI
+    } else if (!get_ival(BTN_MENU) && !get_ival(BTN_UP) && !get_ival(BTN_DOWN) && !get_ival(BTN_LEFT) && !get_ival(BTN_RIGHT)) {
+        suppress_oled = 0;   // released UI keys → safe to show overlay again
+    }
+
     if(RED==255){RED1=FALSE;}
     if(GREEN==255){GREEN1=FALSE;}
     if(BLUE==255){BLUE1=FALSE;}
@@ -851,15 +933,24 @@ main {
     
     if(get_ival(Aim)){
         if(event_press(PS4_SHARE)){
-            HOTHACKER545459999    = !HOTHACKER545459999;
+            HOTHACKER545459999 = !HOTHACKER545459999;
             cls_oled(0);
             draw_rectangle();
-            
             display_mod( center_x(sizeof(SCRIPT_ONOFF)- 1, OLED_FONT_MEDIUM_WIDTH) ,SCRIPT_ONOFF [0],HOTHACKER545459999 ,1);
             HOTHACKER54545DDD = 2000;
-                
-            if(!HOTHACKER545459999) 
-                set_Virtual_Machine_Speed(VM_Default); 
+            if(!HOTHACKER545459999) set_Virtual_Machine_Speed(VM_Default);
+        }
+
+        // Quick toggles
+        if (event_press(PS4_RIGHT)) {
+            gyroBoost_on = !gyroBoost_on;
+            set_pvar(SPVAR_38, gyroBoost_on);
+            display_MOD_status(gyroBoost_on, sizeof(GYROBOOST) - 1, GYROBOOST[0]);
+        }
+        if (event_press(PS4_LEFT)) {
+            gyro_ads_only = !gyro_ads_only;
+            set_pvar(SPVAR_41, gyro_ads_only);
+            display_MOD_status(gyro_ads_only, sizeof(GYROADS)   - 1, GYROADS[0]);
         }
     }
                             
@@ -901,47 +992,45 @@ main {
             }
         } 
         if(HOTHACK) { 
-            cls_oled(0);       
-            draw_rectangle(); 
+            if (!suppress_oled) {
+                cls_oled(0);       
+                draw_rectangle(); 
+            }
 
             if (menuPage_idx == ABOUT_IDX) {
                 display_about_page();
             } else {
-                    if (menuPage_idx == IDX_RECOIL_CONTROL)
-                        display_mod(center_x(sizeof(RECOIL_CONTROL) - 1, OLED_FONT_SMALL_WIDTH),
-                                    RECOIL_CONTROL[0], recoilControl_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_RECOIL_CONTROL)
+                    display_mod(center_x(sizeof(RECOIL_CONTROL) - 1, OLED_FONT_SMALL_WIDTH),
+                                RECOIL_CONTROL[0], recoilControl_on, Options[menuPage_idx]);
 
-                    if (menuPage_idx == IDX_AIM_ASSIST)
-                        display_mod(center_x(sizeof(AIM_ASSIST) - 1, OLED_FONT_SMALL_WIDTH),
-                                    AIM_ASSIST[0], get_option_value(IDX_AIM_ASSIST), 1);
+                if (menuPage_idx == IDX_AIM_ASSIST)
+                    display_mod(center_x(sizeof(AIM_ASSIST) - 1, OLED_FONT_SMALL_WIDTH),
+                                AIM_ASSIST[0], get_option_value(IDX_AIM_ASSIST), 1);
 
-                    if (menuPage_idx == IDX_STICKY_AIM)
-                        display_mod(center_x(sizeof(TRACKERMOD) - 1, OLED_FONT_SMALL_WIDTH),
-                                    TRACKERMOD[0], stickyAim_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_STICKY_AIM)
+                    display_mod(center_x(sizeof(TRACKERMOD) - 1, OLED_FONT_SMALL_WIDTH),
+                                TRACKERMOD[0], stickyAim_on, Options[menuPage_idx]);
 
-                    if (menuPage_idx == IDX_BUNNY_HOP)
-                        display_mod(center_x(sizeof(BUNNY_HOP) - 1, OLED_FONT_SMALL_WIDTH),
-                                    BUNNY_HOP[0], bunnyHop_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_BUNNY_HOP)
+                    display_mod(center_x(sizeof(BUNNY_HOP) - 1, OLED_FONT_SMALL_WIDTH),
+                                BUNNY_HOP[0], bunnyHop_on, Options[menuPage_idx]);
 
-                    if (menuPage_idx == IDX_RUN_COMBO)  
-                        display_mod(center_x(sizeof(RUN_COMBO) - 1, OLED_FONT_SMALL_WIDTH),
-                                    RUN_COMBO[0], runCombo_on, Options[menuPage_idx]);                
+                if (menuPage_idx == IDX_GYRO_BOOST)  
+                    display_mod(center_x(sizeof(GYROBOOST) - 1, OLED_FONT_SMALL_WIDTH),
+                                GYROBOOST[0], gyroBoost_on, Options[menuPage_idx]);                
 
-                    if (menuPage_idx == IDX_PING_ENEMY)
-                        display_mod(center_x(sizeof(PING) - 1, OLED_FONT_SMALL_WIDTH),
-                                    PING[0], pingEnemy_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_PING_ENEMY)
+                    display_mod(center_x(sizeof(PING) - 1, OLED_FONT_SMALL_WIDTH),
+                                PING[0], pingEnemy_on, Options[menuPage_idx]);
 
-                    if (menuPage_idx == IDX_HOLD_BREATH)
-                        display_mod(center_x(sizeof(HOLD) - 1, OLED_FONT_SMALL_WIDTH),
-                                    HOLD[0], sniperApnea_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_HOLD_BREATH)
+                    display_mod(center_x(sizeof(HOLD) - 1, OLED_FONT_SMALL_WIDTH),
+                                HOLD[0], sniperApnea_on, Options[menuPage_idx]);
 
-                    if (menuPage_idx == IDX_RAPIDFIRE)
-                        display_mod(center_x(sizeof(RAPIDFIRE) - 1, OLED_FONT_SMALL_WIDTH),
-                                    RAPIDFIRE[0], rapidFire_on, Options[menuPage_idx]);
-
-                    // if (menuPage_idx == IDX_SLIDE_HOP)
-                    //     display_mod(center_x(sizeof(SLIDE_HOP) - 1, OLED_FONT_SMALL_WIDTH),
-                    //                 SLIDE_HOP[0], slideHop_on, Options[menuPage_idx]);
+                if (menuPage_idx == IDX_RAPIDFIRE)
+                    display_mod(center_x(sizeof(RAPIDFIRE) - 1, OLED_FONT_SMALL_WIDTH),
+                                RAPIDFIRE[0], rapidFire_on, Options[menuPage_idx]);
             }
             HOTHACK = FALSE;
         } 
@@ -1048,18 +1137,16 @@ main {
             }
         }
 
-        if(aimSnap_enabled){
+        // Aim Snap only when HIP (prevents ADS micro step "shake")
+        if (aimSnap_enabled && !get_val(Aim)) {
             CurrentRX = get_val(aim_x);
             CurrentRY = get_val(aim_y);
-
             CurrentRX = GetAIM_SNAP(CurrentRX, aimSnap_resolution);
             CurrentRY = GetAIM_SNAP(CurrentRY, aimSnap_resolution);
-
             set_val(aim_x, clamp(CurrentRX, -100, 100));
             set_val(aim_y, clamp(CurrentRY, -100, 100));
-                
-            }
-                
+        }
+
         if( stickNoiseFilter_on ) { 
             RemoveStickNoise();
         }
@@ -1098,25 +1185,44 @@ main {
                 combo_run(aa_booster_combo);}
                 }
         
-        if (stickyAim_on) {
-            if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))) {
-                CurRX = get_ival(aim_x);
-                CurRY = get_ival(aim_y);
-
-                if (get_ival(Aim) || (get_ival(Aim) && get_ival(Fire))) {
-                    CurRX += get_polar_coordinate(stickyAim_size, sin_(TrackerAngle));
-                    CurRY += get_polar_coordinate(stickyAim_size, cos_(TrackerAngle));
-                }
-                else {
-                    CurRX += get_polar_coordinate(stickyAim_size, cos_(TrackerAngle));
-                    CurRY += get_polar_coordinate(stickyAim_size, sin_(TrackerAngle));
+            if (stickyAim_on) {
+                // ADS now keeps more strength: 0.9x in ADS vs 0.7x before
+                if (get_val(Aim)) { 
+                    ads_scale_num = 9;      // 0.9x
+                } else {
+                    ads_scale_num = 10;     // 1.0x HIP
                 }
 
-            TrackerAngle = (TrackerAngle + stickyAim_speed) % 360;
-            set_val(aim_x, clamp(CurRX, -100, 100));
-            set_val(aim_y, clamp(CurRY, -100, 100));
+                s_size  = (stickyAim_size  * ads_scale_num) / 10;
+                s_speed = (stickyAim_speed * ads_scale_num) / 10;
+
+                // While firing, give a bit more muscle to lock sooner
+                if (get_val(Fire)) {
+                    s_size  = (s_size  * 12) / 10;   // +20% size while shooting
+                    s_speed = (s_speed * 11) / 10;   // +10% speed
+                }
+
+                // slightly firmer floors so it never gets too gentle
+                if (s_size  < 12) s_size  = 12;
+                if (s_speed < 70) s_speed = 70;
+
+                if (get_ival(Aim) || get_ival(Fire) || (get_ival(Aim) && get_ival(Fire))) {
+                    CurRX = get_ival(aim_x);
+                    CurRY = get_ival(aim_y);
+
+                    if (get_ival(Aim) || (get_ival(Aim) && get_ival(Fire))) {
+                        CurRX += get_polar_coordinate(s_size, sin_(TrackerAngle));
+                        CurRY += get_polar_coordinate(s_size, cos_(TrackerAngle));
+                    } else {
+                        CurRX += get_polar_coordinate(s_size, cos_(TrackerAngle));
+                        CurRY += get_polar_coordinate(s_size, sin_(TrackerAngle));
+                    }
+
+                    TrackerAngle = (TrackerAngle + s_speed) % 360; // advance with boosted speed
+                    set_val(aim_x, clamp(CurRX, -100, 100));
+                    set_val(aim_y, clamp(CurRY, -100, 100));
+                }
             }
-        }
         
         // BUNNY_HOP
         if (bunnyHop_on) {
@@ -1131,20 +1237,6 @@ main {
             }
         }
 
-        // RUN COMBO: while Sprint held, run 2s -> slide -> hop -> repeat
-        if (runCombo_on) {                                  
-            if (get_lval(Sprint) && !get_val(Aim)) {
-                // Don’t fight with other movement helpers while RUN COMBO is active
-                combo_stop(BUNNY_HOP);
-                combo_stop(SH_PRE_HOP);
-                combo_stop(SH_DO_HOP);
-                if (!combo_running(RUN_COMBO)) {
-                    combo_run(RUN_COMBO);
-                }
-            } else {
-                combo_stop(RUN_COMBO);
-            }
-        }
         
         if (killshotz_on) {
             if (PolarVIAssist) {
@@ -1199,6 +1291,9 @@ main {
             }
         }
 
+        // ---- Apply Gyro Boost last so it layers on top of other aim logic ----
+        apply_gyro_boost();
+
         if (rapidFire_on && HOTHACKER5454588) {
             if (get_ival(Fire)) {
                 combo_run(EvilBot_auth_enabled);    // active whenever shooting
@@ -1243,13 +1338,14 @@ main {
             }                              
         }            
     }  
-    if (HOTHACKER545459999                // overlay enabled
-        && !HOTHACKE                      // not in menu
-        && !HOTHACKER54545454             // not in editor
-        && !display_black                 // not in intro blackout
-        && !SaverOn) {                    // saver is off during active use
-    draw_venombyte_banner();
-}
+    if (HOTHACKER545459999 // master enable
+        && !HOTHACKE // not in menu
+        && !HOTHACKER54545454 // not in editor
+        && !display_black // not in intro blackout
+        && !SaverOn // saver is off during active use
+        && !suppress_oled) { // not suppressing OLED due to UI keys held
+        draw_venombyte_banner(); // show the overlay if nothing else is active
+    }
 } // eof main
 
 /* 
@@ -1260,27 +1356,28 @@ SAFETY:
     PREVENTS OUT-OF-RANGE INPUTS THAT COULD CAUSE STICK OVERFLOW OR STUTTER.
 */
 const int16 ValRange[][] = {
-    {  1,   90 },   //  0  aimSnap_resolution
-    {  1,   50 },   //  1  input_deadzone
-    {  1,  100 },   //  2  aimAssist_vmSpeed
-    {  1,  100 },   //  3  aimAssist_width
-    {  1,  100 },   //  4  aimAssist_vertical
-    {  1,  100 },   //  5  aimAssist_size
-    {  1,   50 },   //  6  aimAssist_time
-    {  1,  100 },   //  7  stickyAim_size
-    {  1,  100 },   //  8  stickyAim_speed
-    { -100, 100 },  //  9  recoil_y_compensation  (Vertical Recoil; allow negative/positive)
-    {  0,   10 },   // 10  bunnyHop_delayMultiplier
-    {  0,  999 },   // 11  bunnyHop_timing_ms
-    {  0,   99 },   // 12  aaBooster_frequency
-    {  0, 2000 },   // 13  aaBooster_delay_ms
-    {  1,  100 },   // 14  polarAssist_radius
-    {  1,  100 },   // 15  param_slot_a
-    {  1,  100 },   // 16  param_slot_b
-    {  1, 2000 },   // 17  pingCooldown_ms
-    {  1, 1000 },   // 18  rapidFire_on_ms
-    {  1, 1000 },   // 19  rapidFire_off_ms
-    {  1,  100 }    // 20  rapidFire_release_ms
+    {   1,   90 },   //  0  aimSnap_resolution
+    {   1,   50 },   //  1  input_deadzone
+    {   1,  100 },   //  2  aimAssist_vmSpeed
+    {   1,  100 },   //  3  aimAssist_width
+    {   1,  100 },   //  4  aimAssist_vertical
+    {   1,  100 },   //  5  aimAssist_size
+    {   1,   50 },   //  6  aimAssist_time
+    {   1,  100 },   //  7  stickyAim_size
+    {   1,  100 },   //  8  stickyAim_speed
+    { -100,  100 },  //  9  recoil_y_compensation (Vertical)
+    { -100,  100 },  // 10  recoil_x_compensation (Horizontal)  NEW
+    {   0,   10 },   // 11  bunnyHop_delayMultiplier
+    {   0,  999 },   // 12  bunnyHop_timing_ms
+    {   0,   99 },   // 13  aaBooster_frequency
+    {   0, 2000 },   // 14  aaBooster_delay_ms
+    {   1,  100 },   // 15  polarAssist_radius
+    {   1,  100 },   // 16  param_slot_a
+    {   1,  100 },   // 17  param_slot_b
+    {   1, 2000 },   // 18  pingCooldown_ms
+    {   1, 1000 },   // 19  rapidFire_on_ms
+    {   1, 1000 },   // 20  rapidFire_off_ms
+    {   1,  100 }    // 21  rapidFire_release_ms
 };
 
 /* 
@@ -1383,10 +1480,17 @@ PURPOSE:
 SAFETY:
     CLAMPS TO [-100, 100] TO AVOID STICK SATURATION.
 */
+int anti_recoil_x, anti_recoil_y;
 combo EvilBot_Aimbot {
+    // X (horizontal) anti-recoil
+    anti_recoil_x = get_ival(aim_x) + recoil_x_compensation;
+    if (anti_recoil_x > 100)  anti_recoil_x = 100;
+    if (anti_recoil_x < -100) anti_recoil_x = -100;
+    set_val(aim_x, anti_recoil_x);
+
     // Y (vertical) anti-recoil
     anti_recoil_y = get_ival(aim_y) + recoil_y_compensation;
-    if (anti_recoil_y > 100) anti_recoil_y = 100;
+    if (anti_recoil_y > 100)  anti_recoil_y = 100;
     if (anti_recoil_y < -100) anti_recoil_y = -100;
     set_val(aim_y, anti_recoil_y);
 }
@@ -1412,18 +1516,45 @@ PURPOSE:
 CAUTION:
     TOO LARGE WILL FEEL SHAKY; aimAssist_time AND size GOVERN INTENSITY.
 */
-combo aa_booster_combo{
-    X = random(inv(aimAssist_size), aimAssist_size);
-    offset_sticky_aa(moveLX, 27);
+int aa_base, lx, ly, mag;  
+combo aa_booster_combo {
+    // Base from current size, bias stronger near center magnitude
+    aa_base = aimAssist_size;
+
+    // Measure how “centered” aim is (use existing input_mag)
+    lx = get_ival(aim_x);
+    ly = get_ival(aim_y);
+    mag = isqrt((lx*lx)+(ly*ly));  // 0..~141
+
+    // If close to center, add a bit more kick to enter the bubble
+    if (mag < (input_deadzone + 6)) {
+        aa_base = aa_base + 2;              // small center bias
+    }
+
+    // ADS: gentle but not neutered
+    if (get_val(Aim)) {
+        if (aa_base > 5) aa_base -= 1;
+    }
+
+    if (aa_base < 4) aa_base = 4;
+    if (aa_base > 14) aa_base = 14;
+
+    X = random(inv(aa_base), aa_base);
+
+    // slightly larger horizontal nudges for stickiness; keep waits similar
+    offset_sticky_aa(moveLX, 30);
     offset_sticky_aa(moveLY, X);
     wait(aimAssist_time * 10);
-    offset_sticky_aa(moveLX, inv(25));
+
+    offset_sticky_aa(moveLX, inv(28));
     offset_sticky_aa(moveLY, X);
     wait(aimAssist_time * 8);
+
     offset_sticky_aa(moveLY, X);
-    offset_sticky_aa(moveLX, 25);
+    offset_sticky_aa(moveLX, 28);
     wait(aimAssist_time * 10);
-    offset_sticky_aa(moveLX, inv(27));
+
+    offset_sticky_aa(moveLX, inv(30));
     offset_sticky_aa(moveLY, X);
     wait(aimAssist_time * 8);
 }
@@ -1544,14 +1675,14 @@ PURPOSE:
 */
 int time_to_clear_screen;
 function display_MOD_status(f_val,f_size,f_label){  
-    if(!HOTHACKE && !HOTHACKER54545454){                                           
+    if(!HOTHACKE && !HOTHACKER54545454 && !suppress_oled){                                           
         cls_oled(0);  
         print(f_size, 3, OLED_FONT_MEDIUM ,OLED_WHITE, f_label);   
         if( f_val ){
             print(center_x(sizeof(ON)  - 1, OLED_FONT_MEDIUM_WIDTH),37,OLED_FONT_LARGE,OLED_WHITE, ON[0]);
         }
         else{
-            print(center_x(sizeof(OFF)  - 1, OLED_FONT_MEDIUM_WIDTH),37,OLED_FONT_LARGE,OLED_WHITE, OFF[0]);
+            print(center_x(sizeof(OFF) - 1, OLED_FONT_MEDIUM_WIDTH),37,OLED_FONT_LARGE,OLED_WHITE, OFF[0]);
         }    
         time_to_clear_screen = 1500; 
     } 
@@ -1646,7 +1777,12 @@ function Soft_Aim() {
         first_aim = 1;
         aim_speed = atan2_16bits(ly_aim, lx_aim);
     } else {
-        aim_speed = (aim_speed + aimAssist_vmSpeed) % 360;
+        // Smooth the phase increment as you get closer to center (especially in ADS)
+        damping = clamp( (12 - min(input_mag,12)), 0, 12 ); // 0..12
+        vm = aimAssist_vmSpeed - (damping / 2);              // shave up to ~6
+        if (get_val(Aim)) vm = vm - 2;                           // extra calm in ADS
+        if (vm < 20) vm = 20;
+        aim_speed = (aim_speed + vm) % 360;
     }
     
     aim_width = aimAssist_width; 
@@ -1888,6 +2024,7 @@ function save_toggles () {
     set_pvar(SPVAR_11,aimAssist_size);
     set_pvar(SPVAR_12,aimAssist_time);
     set_pvar(SPVAR_15,recoil_y_compensation);
+    set_pvar(SPVAR_22, recoil_x_compensation);
     set_pvar(SPVAR_17,bunnyHop_delayMultiplier);
     set_pvar(SPVAR_18,bunnyHop_timing_ms);
     set_pvar(SPVAR_20,aaBooster_frequency);
@@ -1900,7 +2037,11 @@ function save_toggles () {
     set_pvar(SPVAR_33,rapidFire_on_ms); 
     set_pvar(SPVAR_34,rapidFire_off_ms);                       // RAPID FIRE: VM speed locked to 7
     set_pvar(SPVAR_37, rapidFire_release_ms);                  // RAPID FIRE: Delay locked to 22ms
-    set_pvar(SPVAR_38, runCombo_on);
+    set_pvar(SPVAR_38, gyroBoost_on);
+    set_pvar(SPVAR_41, gyro_ads_only);
+    set_pvar(SPVAR_42, gyro_deadzone);
+    set_pvar(SPVAR_43, gyro_scale_x);
+    set_pvar(SPVAR_44, gyro_scale_y);
     // set_pvar(SPVAR_29, slideHop_on);             // persist SLIDE HOP ON/OFF
     // TRACKERMOD: persist toggle; if ON also persist preset
     set_pvar(SPVAR_4, stickyAim_on);
@@ -1909,38 +2050,6 @@ function save_toggles () {
         set_pvar(SPVAR_14, 90);
     }
     combo_run(EXIT);    
-}
-
-// RUN COMBO: run 2s -> slide -> hop -> small recovery -> repeat while Sprint is held
-// Uses crouch timing similar to SH_MIN_SLIDE_MS so it registers as a true slide
-define RC_RUN_MS        = 2000; // how long to keep running before slide
-define RC_SLIDE_MS      = 220;  // how long to hold crouch for slide
-define RC_STAND_MS      = 60;   // brief stand-up debounce after slide
-define RC_JUMP_MS       = 90;   // jump tap duration
-define RC_RECOVER_MS    = 120;  // cooldown before next cycle
-
-combo RUN_COMBO {
-    // Keep running forward (player controls direction)—just time gate
-    wait(RC_RUN_MS);
-
-    // Slide
-    set_val(Crouch, 100);
-    wait(RC_SLIDE_MS);
-    set_val(Crouch, 0);
-
-    // Stand debounce
-    wait(RC_STAND_MS);
-
-    // Hop
-    set_val(BTN_JUMP, 100);
-    wait(RC_JUMP_MS);
-    set_val(BTN_JUMP, 0);
-
-    // small recovery before next slide+hop cycle
-    wait(RC_RECOVER_MS);
-
-    // Loop. main() stops this if Sprint released or ADS engaged.
-    combo_restart(RUN_COMBO);
 }
 
 /* 
@@ -2328,14 +2437,15 @@ function display_about_page() {
 PURPOSE:
     DISPLAYS THE "VENOMBYTE" BRAND BANNER ON THE OLED WHEN ENABLED.
 */
+int keep_brand = 1;  // runtime-togglable; avoids constant-condition warning
+
 function draw_venombyte_banner() {
-    if(!KEEP_BRAND) return;
-    // horizontally & vertically center for MEDIUM font
+    if(!keep_brand) return;
     print(
         centerPosition(getStringLength(MiscString[1]), OLED_FONT_MEDIUM_WIDTH),
         vcenter_y(OLED_FONT_MEDIUM),
         OLED_FONT_MEDIUM,
         OLED_WHITE,
-        MiscString[1]   // "VENOMBYTE"
+        MiscString[1]
     );
 }
